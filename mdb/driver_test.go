@@ -1393,7 +1393,7 @@ func TestReuseClosedConnection(t *testing.T) {
 		t.Skipf("MySQL server not running on %s", netAddr)
 	}
 
-	md := &MySQLDriver{}
+	md := &MDBDriver{}
 	conn, err := md.Open(dsn)
 	if err != nil {
 		t.Fatalf("error connecting: %s", err.Error())
@@ -3041,7 +3041,7 @@ func TestRawBytesAreNotModified(t *testing.T) {
 	})
 }
 
-var _ driver.DriverContext = &MySQLDriver{}
+var _ driver.DriverContext = &MDBDriver{}
 
 type dialCtxKey struct{}
 

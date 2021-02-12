@@ -22,7 +22,7 @@ type resultSet struct {
 }
 
 type bsqlRows struct {
-	mc     *bsqlConn
+	bc     *bsqlConn
 	rs     resultSet
 	finish func()
 }
@@ -41,7 +41,7 @@ func (rows *bsqlRows) Columns() []string {
 	}
 
 	columns := make([]string, len(rows.rs.columns))
-	if rows.mc != nil && rows.mc.cfg.ColumnsWithAlias {
+	if rows.bc != nil && rows.bc.cfg.ColumnsWithAlias {
 		for i := range columns {
 			if tableName := rows.rs.columns[i].tableName; len(tableName) > 0 {
 				columns[i] = tableName + "." + rows.rs.columns[i].name
@@ -103,7 +103,7 @@ func (rows *bsqlRows) Close() (err error) {
 		rows.finish = nil
 	}
 
-	mc := rows.mc
+	mc := rows.bc
 	if mc == nil {
 		return nil
 	}
@@ -113,7 +113,7 @@ func (rows *bsqlRows) Close() (err error) {
 
 	// flip the buffer for this connection if we need to drain it.
 	// note that for a successful query (i.e. one where rows.next()
-	// has been called until it returns false), `rows.mc` will be nil
+	// has been called until it returns false), `rows.bc` will be nil
 	// by the time the user calls `(*Rows).Close`, so we won't reach this
 	// see: https://github.com/golang/go/commit/651ddbdb5056ded455f47f9c494c67b389622a47
 	mc.buf.flip()
@@ -128,39 +128,39 @@ func (rows *bsqlRows) Close() (err error) {
 		}
 	}
 
-	rows.mc = nil
+	rows.bc = nil
 	return err
 }
 
 func (rows *bsqlRows) HasNextResultSet() (b bool) {
-	if rows.mc == nil {
+	if rows.bc == nil {
 		return false
 	}
-	return rows.mc.status&statusMoreResultsExists != 0
+	return rows.bc.status&statusMoreResultsExists != 0
 }
 
 func (rows *bsqlRows) nextResultSet() (int, error) {
-	if rows.mc == nil {
+	if rows.bc == nil {
 		return 0, io.EOF
 	}
-	if err := rows.mc.error(); err != nil {
+	if err := rows.bc.error(); err != nil {
 		return 0, err
 	}
 
 	// Remove unread packets from stream
 	if !rows.rs.done {
-		if err := rows.mc.readUntilEOF(); err != nil {
+		if err := rows.bc.readUntilEOF(); err != nil {
 			return 0, err
 		}
 		rows.rs.done = true
 	}
 
 	if !rows.HasNextResultSet() {
-		rows.mc = nil
+		rows.bc = nil
 		return 0, io.EOF
 	}
 	rows.rs = resultSet{}
-	return rows.mc.readResultSetHeaderPacket()
+	return rows.bc.readResultSetHeaderPacket()
 }
 
 func (rows *bsqlRows) nextNotEmptyResultSet() (int, error) {
@@ -184,12 +184,12 @@ func (rows *binaryRows) NextResultSet() error {
 		return err
 	}
 
-	rows.rs.columns, err = rows.mc.readColumns(resLen)
+	rows.rs.columns, err = rows.bc.readColumns(resLen)
 	return err
 }
 
 func (rows *binaryRows) Next(dest []driver.Value) error {
-	if mc := rows.mc; mc != nil {
+	if mc := rows.bc; mc != nil {
 		if err := mc.error(); err != nil {
 			return err
 		}
@@ -206,12 +206,12 @@ func (rows *textRows) NextResultSet() (err error) {
 		return err
 	}
 
-	rows.rs.columns, err = rows.mc.readColumns(resLen)
+	rows.rs.columns, err = rows.bc.readColumns(resLen)
 	return err
 }
 
 func (rows *textRows) Next(dest []driver.Value) error {
-	if mc := rows.mc; mc != nil {
+	if mc := rows.bc; mc != nil {
 		if err := mc.error(); err != nil {
 			return err
 		}

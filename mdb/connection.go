@@ -46,16 +46,16 @@ type bsqlConn struct {
 }
 
 // Handles parameters set in DSN after the connection is established
-func (mc *bsqlConn) handleParams() (err error) {
+func (bc *bsqlConn) handleParams() (err error) {
 	var cmdSet strings.Builder
-	for param, val := range mc.cfg.Params {
+	for param, val := range bc.cfg.Params {
 		switch param {
 		// Charset: character_set_connection, character_set_client, character_set_results
 		case "charset":
 			charsets := strings.Split(val, ",")
 			for i := range charsets {
 				// ignore errors here - a charset may not exist
-				err = mc.exec("SET NAMES " + charsets[i])
+				err = bc.exec("SET NAMES " + charsets[i])
 				if err == nil {
 					break
 				}
@@ -68,7 +68,7 @@ func (mc *bsqlConn) handleParams() (err error) {
 		default:
 			if cmdSet.Len() == 0 {
 				// Heuristic: 29 chars for each other key=value to reduce reallocations
-				cmdSet.Grow(4 + len(param) + 1 + len(val) + 30*(len(mc.cfg.Params)-1))
+				cmdSet.Grow(4 + len(param) + 1 + len(val) + 30*(len(bc.cfg.Params)-1))
 				cmdSet.WriteString("SET ")
 			} else {
 				cmdSet.WriteByte(',')
@@ -80,7 +80,7 @@ func (mc *bsqlConn) handleParams() (err error) {
 	}
 
 	if cmdSet.Len() > 0 {
-		err = mc.exec(cmdSet.String())
+		err = bc.exec(cmdSet.String())
 		if err != nil {
 			return
 		}
@@ -89,8 +89,8 @@ func (mc *bsqlConn) handleParams() (err error) {
 	return
 }
 
-func (mc *bsqlConn) markBadConn(err error) error {
-	if mc == nil {
+func (bc *bsqlConn) markBadConn(err error) error {
+	if bc == nil {
 		return err
 	}
 	if err != errBadConnNoWrite {
@@ -99,12 +99,12 @@ func (mc *bsqlConn) markBadConn(err error) error {
 	return driver.ErrBadConn
 }
 
-func (mc *bsqlConn) Begin() (driver.Tx, error) {
-	return mc.begin(false)
+func (bc *bsqlConn) Begin() (driver.Tx, error) {
+	return bc.begin(false)
 }
 
-func (mc *bsqlConn) begin(readOnly bool) (driver.Tx, error) {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) begin(readOnly bool) (driver.Tx, error) {
+	if bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
@@ -114,20 +114,20 @@ func (mc *bsqlConn) begin(readOnly bool) (driver.Tx, error) {
 	} else {
 		q = "START TRANSACTION"
 	}
-	err := mc.exec(q)
+	err := bc.exec(q)
 	if err == nil {
-		return &bsqlTx{mc}, err
+		return &bsqlTx{bc}, err
 	}
-	return nil, mc.markBadConn(err)
+	return nil, bc.markBadConn(err)
 }
 
-func (mc *bsqlConn) Close() (err error) {
+func (bc *bsqlConn) Close() (err error) {
 	// Makes Close idempotent
-	if !mc.closed.IsSet() {
-		err = mc.writeCommandPacket(comQuit)
+	if !bc.closed.IsSet() {
+		err = bc.writeCommandPacket(comQuit)
 	}
 
-	mc.cleanup()
+	bc.cleanup()
 
 	return
 }
@@ -136,24 +136,24 @@ func (mc *bsqlConn) Close() (err error) {
 // function after successfully authentication, call Close instead. This function
 // is called before auth or on auth failure because MySQL will have already
 // closed the network connection.
-func (mc *bsqlConn) cleanup() {
-	if !mc.closed.TrySet(true) {
+func (bc *bsqlConn) cleanup() {
+	if !bc.closed.TrySet(true) {
 		return
 	}
 
 	// Makes cleanup idempotent
-	close(mc.closech)
-	if mc.netConn == nil {
+	close(bc.closech)
+	if bc.netConn == nil {
 		return
 	}
-	if err := mc.netConn.Close(); err != nil {
+	if err := bc.netConn.Close(); err != nil {
 		errLog.Print(err)
 	}
 }
 
-func (mc *bsqlConn) error() error {
-	if mc.closed.IsSet() {
-		if err := mc.canceled.Value(); err != nil {
+func (bc *bsqlConn) error() error {
+	if bc.closed.IsSet() {
+		if err := bc.canceled.Value(); err != nil {
 			return err
 		}
 		return ErrInvalidConn
@@ -161,13 +161,13 @@ func (mc *bsqlConn) error() error {
 	return nil
 }
 
-func (mc *bsqlConn) Prepare(query string) (driver.Stmt, error) {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) Prepare(query string) (driver.Stmt, error) {
+	if bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
 	// Send command
-	err := mc.writeCommandPacketStr(comStmtPrepare, query)
+	err := bc.writeCommandPacketStr(comStmtPrepare, query)
 	if err != nil {
 		// STMT_PREPARE is safe to retry.  So we can return ErrBadConn here.
 		errLog.Print(err)
@@ -175,33 +175,33 @@ func (mc *bsqlConn) Prepare(query string) (driver.Stmt, error) {
 	}
 
 	stmt := &bsqlStmt{
-		mc: mc,
+		bc: bc,
 	}
 
 	// Read Result
 	columnCount, err := stmt.readPrepareResultPacket()
 	if err == nil {
 		if stmt.paramCount > 0 {
-			if err = mc.readUntilEOF(); err != nil {
+			if err = bc.readUntilEOF(); err != nil {
 				return nil, err
 			}
 		}
 
 		if columnCount > 0 {
-			err = mc.readUntilEOF()
+			err = bc.readUntilEOF()
 		}
 	}
 
 	return stmt, err
 }
 
-func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string, error) {
+func (bc *bsqlConn) interpolateParams(query string, args []driver.Value) (string, error) {
 	// Number of ? should be same to len(args)
 	if strings.Count(query, "?") != len(args) {
 		return "", driver.ErrSkip
 	}
 
-	buf, err := mc.buf.takeCompleteBuffer()
+	buf, err := bc.buf.takeCompleteBuffer()
 	if err != nil {
 		// can not take the buffer. Something must be wrong with the connection
 		errLog.Print(err)
@@ -246,7 +246,7 @@ func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string
 				buf = append(buf, "'0000-00-00'"...)
 			} else {
 				buf = append(buf, '\'')
-				buf, err = appendDateTime(buf, v.In(mc.cfg.Loc))
+				buf, err = appendDateTime(buf, v.In(bc.cfg.Loc))
 				if err != nil {
 					return "", err
 				}
@@ -254,7 +254,7 @@ func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string
 			}
 		case json.RawMessage:
 			buf = append(buf, '\'')
-			if mc.status&statusNoBackslashEscapes == 0 {
+			if bc.status&statusNoBackslashEscapes == 0 {
 				buf = escapeBytesBackslash(buf, v)
 			} else {
 				buf = escapeBytesQuotes(buf, v)
@@ -265,7 +265,7 @@ func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string
 				buf = append(buf, "NULL"...)
 			} else {
 				buf = append(buf, "_binary'"...)
-				if mc.status&statusNoBackslashEscapes == 0 {
+				if bc.status&statusNoBackslashEscapes == 0 {
 					buf = escapeBytesBackslash(buf, v)
 				} else {
 					buf = escapeBytesQuotes(buf, v)
@@ -274,7 +274,7 @@ func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string
 			}
 		case string:
 			buf = append(buf, '\'')
-			if mc.status&statusNoBackslashEscapes == 0 {
+			if bc.status&statusNoBackslashEscapes == 0 {
 				buf = escapeStringBackslash(buf, v)
 			} else {
 				buf = escapeStringQuotes(buf, v)
@@ -284,7 +284,7 @@ func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string
 			return "", driver.ErrSkip
 		}
 
-		if len(buf)+4 > mc.maxAllowedPacket {
+		if len(buf)+4 > bc.maxAllowedPacket {
 			return "", driver.ErrSkip
 		}
 	}
@@ -294,92 +294,92 @@ func (mc *bsqlConn) interpolateParams(query string, args []driver.Value) (string
 	return string(buf), nil
 }
 
-func (mc *bsqlConn) Exec(query string, args []driver.Value) (driver.Result, error) {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) Exec(query string, args []driver.Value) (driver.Result, error) {
+	if bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
 	if len(args) != 0 {
-		if !mc.cfg.InterpolateParams {
+		if !bc.cfg.InterpolateParams {
 			return nil, driver.ErrSkip
 		}
 		// try to interpolate the parameters to save extra roundtrips for preparing and closing a statement
-		prepared, err := mc.interpolateParams(query, args)
+		prepared, err := bc.interpolateParams(query, args)
 		if err != nil {
 			return nil, err
 		}
 		query = prepared
 	}
-	mc.affectedRows = 0
-	mc.insertId = 0
+	bc.affectedRows = 0
+	bc.insertId = 0
 
-	err := mc.exec(query)
+	err := bc.exec(query)
 	if err == nil {
 		return &mysqlResult{
-			affectedRows: int64(mc.affectedRows),
-			insertId:     int64(mc.insertId),
+			affectedRows: int64(bc.affectedRows),
+			insertId:     int64(bc.insertId),
 		}, err
 	}
-	return nil, mc.markBadConn(err)
+	return nil, bc.markBadConn(err)
 }
 
 // Internal function to execute commands
-func (mc *bsqlConn) exec(query string) error {
+func (bc *bsqlConn) exec(query string) error {
 	// Send command
-	if err := mc.writeCommandPacketStr(comQuery, query); err != nil {
-		return mc.markBadConn(err)
+	if err := bc.writeCommandPacketStr(comQuery, query); err != nil {
+		return bc.markBadConn(err)
 	}
 
 	// Read Result
-	resLen, err := mc.readResultSetHeaderPacket()
+	resLen, err := bc.readResultSetHeaderPacket()
 	if err != nil {
 		return err
 	}
 
 	if resLen > 0 {
 		// columns
-		if err := mc.readUntilEOF(); err != nil {
+		if err := bc.readUntilEOF(); err != nil {
 			return err
 		}
 
 		// rows
-		if err := mc.readUntilEOF(); err != nil {
+		if err := bc.readUntilEOF(); err != nil {
 			return err
 		}
 	}
 
-	return mc.discardResults()
+	return bc.discardResults()
 }
 
-func (mc *bsqlConn) Query(query string, args []driver.Value) (driver.Rows, error) {
-	return mc.query(query, args)
+func (bc *bsqlConn) Query(query string, args []driver.Value) (driver.Rows, error) {
+	return bc.query(query, args)
 }
 
-func (mc *bsqlConn) query(query string, args []driver.Value) (*textRows, error) {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) query(query string, args []driver.Value) (*textRows, error) {
+	if bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
 	if len(args) != 0 {
-		if !mc.cfg.InterpolateParams {
+		if !bc.cfg.InterpolateParams {
 			return nil, driver.ErrSkip
 		}
 		// try client-side prepare to reduce roundtrip
-		prepared, err := mc.interpolateParams(query, args)
+		prepared, err := bc.interpolateParams(query, args)
 		if err != nil {
 			return nil, err
 		}
 		query = prepared
 	}
 	// Send command
-	err := mc.writeCommandPacketStr(comQuery, query)
+	err := bc.writeCommandPacketStr(comQuery, query)
 	if err == nil {
 		// Read Result
 		var resLen int
-		resLen, err = mc.readResultSetHeaderPacket()
+		resLen, err = bc.readResultSetHeaderPacket()
 		if err == nil {
 			rows := new(textRows)
-			rows.mc = mc
+			rows.bc = bc
 
 			if resLen == 0 {
 				rows.rs.done = true
@@ -393,145 +393,145 @@ func (mc *bsqlConn) query(query string, args []driver.Value) (*textRows, error) 
 			}
 
 			// Columns
-			rows.rs.columns, err = mc.readColumns(resLen)
+			rows.rs.columns, err = bc.readColumns(resLen)
 			return rows, err
 		}
 	}
-	return nil, mc.markBadConn(err)
+	return nil, bc.markBadConn(err)
 }
 
 // Gets the value of the given MySQL System Variable
 // The returned byte slice is only valid until the next read
-func (mc *bsqlConn) getSystemVar(name string) ([]byte, error) {
+func (bc *bsqlConn) getSystemVar(name string) ([]byte, error) {
 	// Send command
-	if err := mc.writeCommandPacketStr(comQuery, "SELECT @@"+name); err != nil {
+	if err := bc.writeCommandPacketStr(comQuery, "SELECT @@"+name); err != nil {
 		return nil, err
 	}
 
 	// Read Result
-	resLen, err := mc.readResultSetHeaderPacket()
+	resLen, err := bc.readResultSetHeaderPacket()
 	if err == nil {
 		rows := new(textRows)
-		rows.mc = mc
+		rows.bc = bc
 		rows.rs.columns = []mysqlField{{fieldType: fieldTypeVarChar}}
 
 		if resLen > 0 {
 			// Columns
-			if err := mc.readUntilEOF(); err != nil {
+			if err := bc.readUntilEOF(); err != nil {
 				return nil, err
 			}
 		}
 
 		dest := make([]driver.Value, resLen)
 		if err = rows.readRow(dest); err == nil {
-			return dest[0].([]byte), mc.readUntilEOF()
+			return dest[0].([]byte), bc.readUntilEOF()
 		}
 	}
 	return nil, err
 }
 
 // finish is called when the query has canceled.
-func (mc *bsqlConn) cancel(err error) {
-	mc.canceled.Set(err)
-	mc.cleanup()
+func (bc *bsqlConn) cancel(err error) {
+	bc.canceled.Set(err)
+	bc.cleanup()
 }
 
 // finish is called when the query has succeeded.
-func (mc *bsqlConn) finish() {
-	if !mc.watching || mc.finished == nil {
+func (bc *bsqlConn) finish() {
+	if !bc.watching || bc.finished == nil {
 		return
 	}
 	select {
-	case mc.finished <- struct{}{}:
-		mc.watching = false
-	case <-mc.closech:
+	case bc.finished <- struct{}{}:
+		bc.watching = false
+	case <-bc.closech:
 	}
 }
 
 // Ping implements driver.Pinger interface
-func (mc *bsqlConn) Ping(ctx context.Context) (err error) {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) Ping(ctx context.Context) (err error) {
+	if bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return driver.ErrBadConn
 	}
 
-	if err = mc.watchCancel(ctx); err != nil {
+	if err = bc.watchCancel(ctx); err != nil {
 		return
 	}
-	defer mc.finish()
+	defer bc.finish()
 
-	if err = mc.writeCommandPacket(comPing); err != nil {
-		return mc.markBadConn(err)
+	if err = bc.writeCommandPacket(comPing); err != nil {
+		return bc.markBadConn(err)
 	}
 
-	return mc.readResultOK()
+	return bc.readResultOK()
 }
 
 // BeginTx implements driver.ConnBeginTx interface
-func (mc *bsqlConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
+	if bc.closed.IsSet() {
 		return nil, driver.ErrBadConn
 	}
 
-	if err := mc.watchCancel(ctx); err != nil {
+	if err := bc.watchCancel(ctx); err != nil {
 		return nil, err
 	}
-	defer mc.finish()
+	defer bc.finish()
 
 	if sql.IsolationLevel(opts.Isolation) != sql.LevelDefault {
 		level, err := mapIsolationLevel(opts.Isolation)
 		if err != nil {
 			return nil, err
 		}
-		err = mc.exec("SET TRANSACTION ISOLATION LEVEL " + level)
+		err = bc.exec("SET TRANSACTION ISOLATION LEVEL " + level)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return mc.begin(opts.ReadOnly)
+	return bc.begin(opts.ReadOnly)
 }
 
-func (mc *bsqlConn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+func (bc *bsqlConn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	dargs, err := namedValueToValue(args)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := mc.watchCancel(ctx); err != nil {
+	if err := bc.watchCancel(ctx); err != nil {
 		return nil, err
 	}
 
-	rows, err := mc.query(query, dargs)
+	rows, err := bc.query(query, dargs)
 	if err != nil {
-		mc.finish()
+		bc.finish()
 		return nil, err
 	}
-	rows.finish = mc.finish
+	rows.finish = bc.finish
 	return rows, err
 }
 
-func (mc *bsqlConn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
+func (bc *bsqlConn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
 	dargs, err := namedValueToValue(args)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := mc.watchCancel(ctx); err != nil {
+	if err := bc.watchCancel(ctx); err != nil {
 		return nil, err
 	}
-	defer mc.finish()
+	defer bc.finish()
 
-	return mc.Exec(query, dargs)
+	return bc.Exec(query, dargs)
 }
 
-func (mc *bsqlConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
-	if err := mc.watchCancel(ctx); err != nil {
+func (bc *bsqlConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
+	if err := bc.watchCancel(ctx); err != nil {
 		return nil, err
 	}
 
-	stmt, err := mc.Prepare(query)
-	mc.finish()
+	stmt, err := bc.Prepare(query)
+	bc.finish()
 	if err != nil {
 		return nil, err
 	}
@@ -551,16 +551,16 @@ func (stmt *bsqlStmt) QueryContext(ctx context.Context, args []driver.NamedValue
 		return nil, err
 	}
 
-	if err := stmt.mc.watchCancel(ctx); err != nil {
+	if err := stmt.bc.watchCancel(ctx); err != nil {
 		return nil, err
 	}
 
 	rows, err := stmt.query(dargs)
 	if err != nil {
-		stmt.mc.finish()
+		stmt.bc.finish()
 		return nil, err
 	}
-	rows.finish = stmt.mc.finish
+	rows.finish = stmt.bc.finish
 	return rows, err
 }
 
@@ -570,19 +570,19 @@ func (stmt *bsqlStmt) ExecContext(ctx context.Context, args []driver.NamedValue)
 		return nil, err
 	}
 
-	if err := stmt.mc.watchCancel(ctx); err != nil {
+	if err := stmt.bc.watchCancel(ctx); err != nil {
 		return nil, err
 	}
-	defer stmt.mc.finish()
+	defer stmt.bc.finish()
 
 	return stmt.Exec(dargs)
 }
 
-func (mc *bsqlConn) watchCancel(ctx context.Context) error {
-	if mc.watching {
+func (bc *bsqlConn) watchCancel(ctx context.Context) error {
+	if bc.watching {
 		// Reach here if canceled,
 		// so the connection is already invalid
-		mc.cleanup()
+		bc.cleanup()
 		return nil
 	}
 	// When ctx is already cancelled, don't watch it.
@@ -594,51 +594,51 @@ func (mc *bsqlConn) watchCancel(ctx context.Context) error {
 		return nil
 	}
 	// When watcher is not alive, can't watch it.
-	if mc.watcher == nil {
+	if bc.watcher == nil {
 		return nil
 	}
 
-	mc.watching = true
-	mc.watcher <- ctx
+	bc.watching = true
+	bc.watcher <- ctx
 	return nil
 }
 
-func (mc *bsqlConn) startWatcher() {
+func (bc *bsqlConn) startWatcher() {
 	watcher := make(chan context.Context, 1)
-	mc.watcher = watcher
+	bc.watcher = watcher
 	finished := make(chan struct{})
-	mc.finished = finished
+	bc.finished = finished
 	go func() {
 		for {
 			var ctx context.Context
 			select {
 			case ctx = <-watcher:
-			case <-mc.closech:
+			case <-bc.closech:
 				return
 			}
 
 			select {
 			case <-ctx.Done():
-				mc.cancel(ctx.Err())
+				bc.cancel(ctx.Err())
 			case <-finished:
-			case <-mc.closech:
+			case <-bc.closech:
 				return
 			}
 		}
 	}()
 }
 
-func (mc *bsqlConn) CheckNamedValue(nv *driver.NamedValue) (err error) {
+func (bc *bsqlConn) CheckNamedValue(nv *driver.NamedValue) (err error) {
 	nv.Value, err = converter{}.ConvertValue(nv.Value)
 	return
 }
 
 // ResetSession implements driver.SessionResetter.
 // (From Go 1.10)
-func (mc *bsqlConn) ResetSession(ctx context.Context) error {
-	if mc.closed.IsSet() {
+func (bc *bsqlConn) ResetSession(ctx context.Context) error {
+	if bc.closed.IsSet() {
 		return driver.ErrBadConn
 	}
-	mc.reset = true
+	bc.reset = true
 	return nil
 }

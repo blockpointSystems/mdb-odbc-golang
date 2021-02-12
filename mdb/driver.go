@@ -24,9 +24,9 @@ import (
 	"sync"
 )
 
-// MySQLDriver is exported to make the driver directly accessible.
+// MDBDriver is exported to make the driver directly accessible.
 // In general the driver is used via the database/sql package.
-type MySQLDriver struct{}
+type MDBDriver struct{}
 
 // DialFunc is a function which can be used to establish the network connection.
 // Custom dial functions must be registered with RegisterDial
@@ -69,7 +69,7 @@ func RegisterDial(network string, dial DialFunc) {
 // Open new Connection.
 // See https://github.com/go-sql-driver/mysql#dsn-data-source-name for how
 // the DSN string is formatted
-func (d MySQLDriver) Open(dsn string) (driver.Conn, error) {
+func (d MDBDriver) Open(dsn string) (driver.Conn, error) {
 	cfg, err := ParseDSN(dsn)
 	if err != nil {
 		return nil, err
@@ -81,14 +81,14 @@ func (d MySQLDriver) Open(dsn string) (driver.Conn, error) {
 }
 
 func init() {
-	sql.Register("mysql", &MySQLDriver{})
+	sql.Register("mysql", &MDBDriver{})
 }
 
 // NewConnector returns new driver.Connector.
 func NewConnector(cfg *Config) (driver.Connector, error) {
 	cfg = cfg.Clone()
 	// normalize the contents of cfg so calls to NewConnector have the same
-	// behavior as MySQLDriver.OpenConnector
+	// behavior as MDBDriver.OpenConnector
 	if err := cfg.normalize(); err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func NewConnector(cfg *Config) (driver.Connector, error) {
 }
 
 // OpenConnector implements driver.DriverContext.
-func (d MySQLDriver) OpenConnector(dsn string) (driver.Connector, error) {
+func (d MDBDriver) OpenConnector(dsn string) (driver.Connector, error) {
 	cfg, err := ParseDSN(dsn)
 	if err != nil {
 		return nil, err

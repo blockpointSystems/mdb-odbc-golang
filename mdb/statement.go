@@ -17,13 +17,13 @@ import (
 )
 
 type bsqlStmt struct {
-	mc         *bsqlConn
+	bc         *bsqlConn
 	id         uint32
 	paramCount int
 }
 
 func (stmt *bsqlStmt) Close() error {
-	if stmt.mc == nil || stmt.mc.closed.IsSet() {
+	if stmt.bc == nil || stmt.bc.closed.IsSet() {
 		// driver.Stmt.Close can be called more than once, thus this function
 		// has to be idempotent.
 		// See also Issue #450 and golang/go#16019.
@@ -31,8 +31,8 @@ func (stmt *bsqlStmt) Close() error {
 		return driver.ErrBadConn
 	}
 
-	err := stmt.mc.writeCommandPacketUint32(comStmtClose, stmt.id)
-	stmt.mc = nil
+	err := stmt.bc.writeCommandPacketUint32(comStmtClose, stmt.id)
+	stmt.bc = nil
 	return err
 }
 
@@ -50,17 +50,17 @@ func (stmt *bsqlStmt) CheckNamedValue(nv *driver.NamedValue) (err error) {
 }
 
 func (stmt *bsqlStmt) Exec(args []driver.Value) (driver.Result, error) {
-	if stmt.mc.closed.IsSet() {
+	if stmt.bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
 	// Send command
 	err := stmt.writeExecutePacket(args)
 	if err != nil {
-		return nil, stmt.mc.markBadConn(err)
+		return nil, stmt.bc.markBadConn(err)
 	}
 
-	mc := stmt.mc
+	mc := stmt.bc
 
 	mc.affectedRows = 0
 	mc.insertId = 0
@@ -98,17 +98,17 @@ func (stmt *bsqlStmt) Query(args []driver.Value) (driver.Rows, error) {
 }
 
 func (stmt *bsqlStmt) query(args []driver.Value) (*binaryRows, error) {
-	if stmt.mc.closed.IsSet() {
+	if stmt.bc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
 	// Send command
 	err := stmt.writeExecutePacket(args)
 	if err != nil {
-		return nil, stmt.mc.markBadConn(err)
+		return nil, stmt.bc.markBadConn(err)
 	}
 
-	mc := stmt.mc
+	mc := stmt.bc
 
 	// Read Result
 	resLen, err := mc.readResultSetHeaderPacket()
@@ -119,7 +119,7 @@ func (stmt *bsqlStmt) query(args []driver.Value) (*binaryRows, error) {
 	rows := new(binaryRows)
 
 	if resLen > 0 {
-		rows.mc = mc
+		rows.bc = mc
 		rows.rs.columns, err = mc.readColumns(resLen)
 	} else {
 		rows.rs.done = true

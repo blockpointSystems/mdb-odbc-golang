@@ -148,7 +148,7 @@ func TestCleanCancel(t *testing.T) {
 		}
 
 		if mc.closed.IsSet() {
-			t.Error("expected mc is not closed, closed actually")
+			t.Error("expected bc is not closed, closed actually")
 		}
 
 		if mc.watching {

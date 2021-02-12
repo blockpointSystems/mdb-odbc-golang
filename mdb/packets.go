@@ -734,7 +734,7 @@ func (mc *bsqlConn) readColumns(count int) ([]mysqlField, error) {
 // Read Packets as Field Packets until EOF-Packet or an Error appears
 // http://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::ResultsetRow
 func (rows *textRows) readRow(dest []driver.Value) error {
-	mc := rows.mc
+	mc := rows.bc
 
 	if rows.rs.done {
 		return io.EOF
@@ -748,15 +748,15 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 	// EOF Packet
 	if data[0] == iEOF && len(data) == 5 {
 		// server_status [2 bytes]
-		rows.mc.status = readStatus(data[3:])
+		rows.bc.status = readStatus(data[3:])
 		rows.rs.done = true
 		if !rows.HasNextResultSet() {
-			rows.mc = nil
+			rows.bc = nil
 		}
 		return io.EOF
 	}
 	if data[0] == iERR {
-		rows.mc = nil
+		rows.bc = nil
 		return mc.handleErrorPacket(data)
 	}
 
@@ -827,11 +827,11 @@ func (mc *bsqlConn) readUntilEOF() error {
 // Prepare Result Packets
 // http://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html
 func (stmt *bsqlStmt) readPrepareResultPacket() (uint16, error) {
-	data, err := stmt.mc.readPacket()
+	data, err := stmt.bc.readPacket()
 	if err == nil {
 		// packet indicator [1 byte]
 		if data[0] != iOK {
-			return 0, stmt.mc.handleErrorPacket(data)
+			return 0, stmt.bc.handleErrorPacket(data)
 		}
 
 		// statement id [4 bytes]
@@ -854,7 +854,7 @@ func (stmt *bsqlStmt) readPrepareResultPacket() (uint16, error) {
 
 // http://dev.mysql.com/doc/internals/en/com-stmt-send-long-data.html
 func (stmt *bsqlStmt) writeCommandLongData(paramID int, arg []byte) error {
-	maxLen := stmt.mc.maxAllowedPacket - 1
+	maxLen := stmt.bc.maxAllowedPacket - 1
 	pktLen := maxLen
 
 	// After the header (bytes 0-3) follows before the data:
@@ -875,7 +875,7 @@ func (stmt *bsqlStmt) writeCommandLongData(paramID int, arg []byte) error {
 			pktLen = dataOffset + argLen
 		}
 
-		stmt.mc.sequence = 0
+		stmt.bc.sequence = 0
 		// Add command byte [1 byte]
 		data[4] = comStmtSendLongData
 
@@ -890,7 +890,7 @@ func (stmt *bsqlStmt) writeCommandLongData(paramID int, arg []byte) error {
 		data[10] = byte(paramID >> 8)
 
 		// Send CMD packet
-		err := stmt.mc.writePacket(data[:4+pktLen])
+		err := stmt.bc.writePacket(data[:4+pktLen])
 		if err == nil {
 			data = data[pktLen-dataOffset:]
 			continue
@@ -900,7 +900,7 @@ func (stmt *bsqlStmt) writeCommandLongData(paramID int, arg []byte) error {
 	}
 
 	// Reset Packet Sequence
-	stmt.mc.sequence = 0
+	stmt.bc.sequence = 0
 	return nil
 }
 
@@ -916,7 +916,7 @@ func (stmt *bsqlStmt) writeExecutePacket(args []driver.Value) error {
 	}
 
 	const minPktLen = 4 + 1 + 4 + 1 + 4
-	mc := stmt.mc
+	mc := stmt.bc
 
 	// Determine threshold dynamically to avoid packet size shortage.
 	longDataSize := mc.maxAllowedPacket / (stmt.paramCount + 1)
@@ -1171,7 +1171,7 @@ func (mc *bsqlConn) discardResults() error {
 
 // http://dev.mysql.com/doc/internals/en/binary-protocol-resultset-row.html
 func (rows *binaryRows) readRow(dest []driver.Value) error {
-	data, err := rows.mc.readPacket()
+	data, err := rows.bc.readPacket()
 	if err != nil {
 		return err
 	}
@@ -1180,15 +1180,15 @@ func (rows *binaryRows) readRow(dest []driver.Value) error {
 	if data[0] != iOK {
 		// EOF Packet
 		if data[0] == iEOF && len(data) == 5 {
-			rows.mc.status = readStatus(data[3:])
+			rows.bc.status = readStatus(data[3:])
 			rows.rs.done = true
 			if !rows.HasNextResultSet() {
-				rows.mc = nil
+				rows.bc = nil
 			}
 			return io.EOF
 		}
-		mc := rows.mc
-		rows.mc = nil
+		mc := rows.bc
+		rows.bc = nil
 
 		// Error otherwise
 		return mc.handleErrorPacket(data)
@@ -1310,8 +1310,8 @@ func (rows *binaryRows) readRow(dest []driver.Value) error {
 					)
 				}
 				dest[i], err = formatBinaryTime(data[pos:pos+int(num)], dstlen)
-			case rows.mc.parseTime:
-				dest[i], err = parseBinaryDateTime(num, data[pos:], rows.mc.cfg.Loc)
+			case rows.bc.parseTime:
+				dest[i], err = parseBinaryDateTime(num, data[pos:], rows.bc.cfg.Loc)
 			default:
 				var dstlen uint8
 				if rows.rs.columns[i].fieldType == fieldTypeDate {
