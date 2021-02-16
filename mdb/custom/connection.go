@@ -154,11 +154,14 @@ func (db *Conn) interpolateParams(query string, args []driver.Value) (string, er
 // Deprecated: Drivers should implement ExecerContext instead.
 //type Execer interface {}
 
-func (db *Conn) Exec(query string, args []driver.Value) (Result, error) {
+func (db *Conn) Exec(query string, args []driver.Value) (result Result, err error) {
+	// Make sure connection is still live
 	if db.IsClosed() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
+
+	// Interpolate parameters if provided
 	if len(args) != 0 {
 		if !db.cfg.InterpolateParams {
 			return nil, driver.ErrSkip
@@ -170,92 +173,81 @@ func (db *Conn) Exec(query string, args []driver.Value) (Result, error) {
 		}
 		query = prepared
 	}
+
+	// Reset affected rows
 	db.affectedRows = 0
 	db.insertId = 0
 
-	err := db.exec(query)
+	err = db.exec(query)
 	if err == nil {
-		return &mysqlResult{
+		result = Result{
 			affectedRows: int64(db.affectedRows),
 			insertId:     int64(db.insertId),
-		}, err
+		}
 	}
-	return nil, db.markBadConn(err)
+	return
 }
 
 // Internal function to execute commands
-func (db *Conn) exec(query string) error {
+func (db *Conn) exec(query string) (err error) {
 	// Send command
-	if err := db.writeCommandPacketStr(comQuery, query); err != nil {
-		return db.markBadConn(err)
-	}
 
 	// Read Result
-	resLen, err := db.readResultSetHeaderPacket()
-	if err != nil {
-		return err
-	}
 
-	if resLen > 0 {
-		// columns
-		if err := db.readUntilEOF(); err != nil {
-			return err
-		}
+	// Log affected Rows
+	// Log insert Id
 
-		// rows
-		if err := db.readUntilEOF(); err != nil {
-			return err
-		}
-	}
+	// Clean up
 
-	return db.discardResults()
+	// Return
+	return
 }
 
-func (bc *bsqlConn) Query(query string, args []driver.Value) (driver.Rows, error) {
-	return bc.query(query, args)
-}
-
-func (bc *bsqlConn) query(query string, args []driver.Value) (*textRows, error) {
-	if bc.closed.IsSet() {
-		errLog.Print(ErrInvalidConn)
-		return nil, driver.ErrBadConn
-	}
-	if len(args) != 0 {
-		if !bc.cfg.InterpolateParams {
-			return nil, driver.ErrSkip
-		}
-		// try client-side prepare to reduce roundtrip
-		prepared, err := bc.interpolateParams(query, args)
-		if err != nil {
-			return nil, err
-		}
-		query = prepared
-	}
-	// Send command
-	err := bc.writeCommandPacketStr(comQuery, query)
-	if err == nil {
-		// Read Result
-		var resLen int
-		resLen, err = bc.readResultSetHeaderPacket()
-		if err == nil {
-			rows := new(textRows)
-			rows.bc = bc
-
-			if resLen == 0 {
-				rows.rs.done = true
-
-				switch err := rows.NextResultSet(); err {
-				case nil, io.EOF:
-					return rows, nil
-				default:
-					return nil, err
-				}
-			}
-
-			// Columns
-			rows.rs.columns, err = bc.readColumns(resLen)
-			return rows, err
-		}
-	}
-	return nil, bc.markBadConn(err)
-}
+//func (bc *bsqlConn) Query(query string, args []driver.Value) (driver.Rows, error) {
+//	return bc.query(query, args)
+//}
+//
+//func (bc *bsqlConn) query(query string, args []driver.Value) (*textRows, error) {
+//	if bc.closed.IsSet() {
+//		errLog.Print(ErrInvalidConn)
+//		return nil, driver.ErrBadConn
+//	}
+//	if len(args) != 0 {
+//		if !bc.cfg.InterpolateParams {
+//			return nil, driver.ErrSkip
+//		}
+//		// try client-side prepare to reduce roundtrip
+//		prepared, err := bc.interpolateParams(query, args)
+//		if err != nil {
+//			return nil, err
+//		}
+//		query = prepared
+//	}
+//	// Send command
+//	err := bc.writeCommandPacketStr(comQuery, query)
+//	if err == nil {
+//		// Read Result
+//		var resLen int
+//		resLen, err = bc.readResultSetHeaderPacket()
+//		if err == nil {
+//			rows := new(textRows)
+//			rows.bc = bc
+//
+//			if resLen == 0 {
+//				rows.rs.done = true
+//
+//				switch err := rows.NextResultSet(); err {
+//				case nil, io.EOF:
+//					return rows, nil
+//				default:
+//					return nil, err
+//				}
+//			}
+//
+//			// Columns
+//			rows.rs.columns, err = bc.readColumns(resLen)
+//			return rows, err
+//		}
+//	}
+//	return nil, bc.markBadConn(err)
+//}
