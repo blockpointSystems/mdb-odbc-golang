@@ -1,17 +1,6 @@
 package custom
 
-
-// Result is the result of a query execution.
-type Result interface {
-	// LastInsertId returns the database's auto-generated ID
-	// after, for example, an INSERT into a table with primary
-	// key.
-	LastInsertId() (int64, error)
-
-	// RowsAffected returns the number of rows affected by the
-	// query.
-	RowsAffected() (int64, error)
-}
+import "database/sql/driver"
 
 // Stmt is a prepared statement. It is bound to a Conn and not
 // used by multiple goroutines concurrently.
@@ -43,7 +32,7 @@ func (s *Stmt) NumInput() int {
 // as an INSERT or UPDATE.
 //
 // Deprecated: Drivers should implement StmtExecContext instead (or additionally).
-func (s *Stmt) Exec(args []Value) (Result, error) {
+func (s *Stmt) Exec(args []driver.Value) (Result, error) {
 	panic("implement me!")
 }
 
@@ -51,6 +40,6 @@ func (s *Stmt) Exec(args []Value) (Result, error) {
 // SELECT.
 //
 // Deprecated: Drivers should implement StmtQueryContext instead (or additionally).
-func (s *Stmt) Query(args []Value) (Rows, error) {
+func (s *Stmt) Query(args []driver.Value) (Rows, error) {
 	panic("implement me!")
 }

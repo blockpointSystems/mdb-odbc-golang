@@ -57,9 +57,9 @@ func (r *Rows) NextResultSet() error {
 // RowsColumnTypeScanType may be implemented by Rows. It should return
 // the value type that can be used to scan types into. For example, the database
 // column type "bigint" this should return "reflect.TypeOf(int64(0))".
-type RowsColumnTypeScanType interface {
-	Rows
-	ColumnTypeScanType(index int) reflect.Type
+//type RowsColumnTypeScanType interface {}
+func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
+	panic("implement me!")
 }
 
 // RowsColumnTypeDatabaseTypeName may be implemented by Rows. It should return the
@@ -67,9 +67,10 @@ type RowsColumnTypeScanType interface {
 // Examples of returned types: "VARCHAR", "NVARCHAR", "VARCHAR2", "CHAR", "TEXT",
 // "DECIMAL", "SMALLINT", "INT", "BIGINT", "BOOL", "[]BIGINT", "JSONB", "XML",
 // "TIMESTAMP".
-type RowsColumnTypeDatabaseTypeName interface {
-	Rows
-	ColumnTypeDatabaseTypeName(index int) string
+//type RowsColumnTypeDatabaseTypeName interface {}
+
+func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
+	panic("implement me!")
 }
 
 // RowsColumnTypeLength may be implemented by Rows. It should return the length
@@ -83,18 +84,20 @@ type RowsColumnTypeDatabaseTypeName interface {
 //   decimal       (0, false)
 //   int           (0, false)
 //   bytea(30)     (30, true)
-type RowsColumnTypeLength interface {
-	Rows
-	ColumnTypeLength(index int) (length int64, ok bool)
+//type RowsColumnTypeLength interface {}
+
+func (r *Rows) ColumnTypeLength(index int) (length int64, ok bool) {
+	panic("implement me!")
 }
 
 // RowsColumnTypeNullable may be implemented by Rows. The nullable value should
 // be true if it is known the column may be null, or false if the column is known
 // to be not nullable.
 // If the column nullability is unknown, ok should be false.
-type RowsColumnTypeNullable interface {
-	Rows
-	ColumnTypeNullable(index int) (nullable, ok bool)
+//type RowsColumnTypeNullable interface {}
+
+func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
+	panic("implement me!")
 }
 
 // RowsColumnTypePrecisionScale may be implemented by Rows. It should return
@@ -103,7 +106,8 @@ type RowsColumnTypeNullable interface {
 //   decimal(38, 4)    (38, 4, true)
 //   int               (0, 0, false)
 //   decimal           (math.MaxInt64, math.MaxInt64, true)
-type RowsColumnTypePrecisionScale interface {
-	Rows
-	ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool)
+//type RowsColumnTypePrecisionScale interface {}
+
+func (r *Rows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
+	panic("implement me!")
 }
