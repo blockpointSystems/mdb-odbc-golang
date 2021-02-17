@@ -1,223 +1,113 @@
-// Go MySQL Driver - A MySQL-Driver for Go's database/sql package
-//
-// Copyright 2012 The Go-MySQL-Driver Authors. All rights reserved.
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this file,
-// You can obtain one at http://mozilla.org/MPL/2.0/.
-
 package mdb
 
 import (
 	"database/sql/driver"
-	"io"
-	"math"
 	"reflect"
 )
 
-type resultSet struct {
-	columns     []mysqlField
-	columnNames []string
-	done        bool
+// Rows is an iterator over an executed query's results.
+type Rows struct {
+
+}
+// Columns returns the names of the columns. The number of
+// columns of the result is inferred from the length of the
+// slice. If a particular column name isn't known, an empty
+// string should be returned for that entry.
+func (r *Rows) Columns() []string {
+	panic("implement me!")
 }
 
-type bsqlRows struct {
-	bc     *bsqlConn
-	rs     resultSet
-	finish func()
+// Close closes the rows iterator.
+func (r *Rows) Close() error {
+	panic("implement me!")
 }
 
-type binaryRows struct {
-	bsqlRows
+// Next is called to populate the next row of data into
+// the provided slice. The provided slice will be the same
+// size as the Columns() are wide.
+//
+// Next should return io.EOF when there are no more rows.
+//
+// The dest should not be written to outside of Next. Care
+// should be taken when closing Rows not to modify
+// a buffer held in dest.
+func (r *Rows) Next(dest []driver.Value) error {
+	panic("implement me!")
 }
 
-type textRows struct {
-	bsqlRows
+
+// RowsNextResultSet extends the Rows interface by providing a way to signal
+// the driver to advance to the next result set.
+//type RowsNextResultSet interface {}
+
+// HasNextResultSet is called at the end of the current result set and
+// reports whether there is another result set after the current one.
+func (r *Rows) HasNextResultSet() bool {
+	panic("implement me!")
 }
 
-func (rows *bsqlRows) Columns() []string {
-	if rows.rs.columnNames != nil {
-		return rows.rs.columnNames
-	}
-
-	columns := make([]string, len(rows.rs.columns))
-	if rows.bc != nil && rows.bc.cfg.ColumnsWithAlias {
-		for i := range columns {
-			if tableName := rows.rs.columns[i].tableName; len(tableName) > 0 {
-				columns[i] = tableName + "." + rows.rs.columns[i].name
-			} else {
-				columns[i] = rows.rs.columns[i].name
-			}
-		}
-	} else {
-		for i := range columns {
-			columns[i] = rows.rs.columns[i].name
-		}
-	}
-
-	rows.rs.columnNames = columns
-	return columns
+// NextResultSet advances the driver to the next result set even
+// if there are remaining rows in the current result set.
+//
+// NextResultSet should return io.EOF when there are no more result sets.
+func (r *Rows) NextResultSet() error {
+	panic("implement me!")
 }
 
-func (rows *bsqlRows) ColumnTypeDatabaseTypeName(i int) string {
-	return rows.rs.columns[i].typeDatabaseName()
+// RowsColumnTypeScanType may be implemented by Rows. It should return
+// the value type that can be used to scan types into. For example, the database
+// column type "bigint" this should return "reflect.TypeOf(int64(0))".
+//type RowsColumnTypeScanType interface {}
+func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
+	panic("implement me!")
 }
 
-// func (rows *bsqlRows) ColumnTypeLength(i int) (length int64, ok bool) {
-// 	return int64(rows.rs.columns[i].length), true
-// }
+// RowsColumnTypeDatabaseTypeName may be implemented by Rows. It should return the
+// database system type name without the length. Type names should be uppercase.
+// Examples of returned types: "VARCHAR", "NVARCHAR", "VARCHAR2", "CHAR", "TEXT",
+// "DECIMAL", "SMALLINT", "INT", "BIGINT", "BOOL", "[]BIGINT", "JSONB", "XML",
+// "TIMESTAMP".
+//type RowsColumnTypeDatabaseTypeName interface {}
 
-func (rows *bsqlRows) ColumnTypeNullable(i int) (nullable, ok bool) {
-	return rows.rs.columns[i].flags&flagNotNULL == 0, true
+func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
+	panic("implement me!")
 }
 
-func (rows *bsqlRows) ColumnTypePrecisionScale(i int) (int64, int64, bool) {
-	column := rows.rs.columns[i]
-	decimals := int64(column.decimals)
+// RowsColumnTypeLength may be implemented by Rows. It should return the length
+// of the column type if the column is a variable length type. If the column is
+// not a variable length type ok should return false.
+// If length is not limited other than system limits, it should return math.MaxInt64.
+// The following are examples of returned values for various types:
+//   TEXT          (math.MaxInt64, true)
+//   varchar(10)   (10, true)
+//   nvarchar(10)  (10, true)
+//   decimal       (0, false)
+//   int           (0, false)
+//   bytea(30)     (30, true)
+//type RowsColumnTypeLength interface {}
 
-	switch column.fieldType {
-	case fieldTypeDecimal, fieldTypeNewDecimal:
-		if decimals > 0 {
-			return int64(column.length) - 2, decimals, true
-		}
-		return int64(column.length) - 1, decimals, true
-	case fieldTypeTimestamp, fieldTypeDateTime, fieldTypeTime:
-		return decimals, decimals, true
-	case fieldTypeFloat, fieldTypeDouble:
-		if decimals == 0x1f {
-			return math.MaxInt64, math.MaxInt64, true
-		}
-		return math.MaxInt64, decimals, true
-	}
-
-	return 0, 0, false
+func (r *Rows) ColumnTypeLength(index int) (length int64, ok bool) {
+	panic("implement me!")
 }
 
-func (rows *bsqlRows) ColumnTypeScanType(i int) reflect.Type {
-	return rows.rs.columns[i].scanType()
+// RowsColumnTypeNullable may be implemented by Rows. The nullable value should
+// be true if it is known the column may be null, or false if the column is known
+// to be not nullable.
+// If the column nullability is unknown, ok should be false.
+//type RowsColumnTypeNullable interface {}
+
+func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
+	panic("implement me!")
 }
 
-func (rows *bsqlRows) Close() (err error) {
-	if f := rows.finish; f != nil {
-		f()
-		rows.finish = nil
-	}
+// RowsColumnTypePrecisionScale may be implemented by Rows. It should return
+// the precision and scale for decimal types. If not applicable, ok should be false.
+// The following are examples of returned values for various types:
+//   decimal(38, 4)    (38, 4, true)
+//   int               (0, 0, false)
+//   decimal           (math.MaxInt64, math.MaxInt64, true)
+//type RowsColumnTypePrecisionScale interface {}
 
-	mc := rows.bc
-	if mc == nil {
-		return nil
-	}
-	if err := mc.error(); err != nil {
-		return err
-	}
-
-	// flip the buffer for this connection if we need to drain it.
-	// note that for a successful query (i.e. one where rows.next()
-	// has been called until it returns false), `rows.bc` will be nil
-	// by the time the user calls `(*Rows).Close`, so we won't reach this
-	// see: https://github.com/golang/go/commit/651ddbdb5056ded455f47f9c494c67b389622a47
-	mc.buf.flip()
-
-	// Remove unread packets from stream
-	if !rows.rs.done {
-		err = mc.readUntilEOF()
-	}
-	if err == nil {
-		if err = mc.discardResults(); err != nil {
-			return err
-		}
-	}
-
-	rows.bc = nil
-	return err
-}
-
-func (rows *bsqlRows) HasNextResultSet() (b bool) {
-	if rows.bc == nil {
-		return false
-	}
-	return rows.bc.status&statusMoreResultsExists != 0
-}
-
-func (rows *bsqlRows) nextResultSet() (int, error) {
-	if rows.bc == nil {
-		return 0, io.EOF
-	}
-	if err := rows.bc.error(); err != nil {
-		return 0, err
-	}
-
-	// Remove unread packets from stream
-	if !rows.rs.done {
-		if err := rows.bc.readUntilEOF(); err != nil {
-			return 0, err
-		}
-		rows.rs.done = true
-	}
-
-	if !rows.HasNextResultSet() {
-		rows.bc = nil
-		return 0, io.EOF
-	}
-	rows.rs = resultSet{}
-	return rows.bc.readResultSetHeaderPacket()
-}
-
-func (rows *bsqlRows) nextNotEmptyResultSet() (int, error) {
-	for {
-		resLen, err := rows.nextResultSet()
-		if err != nil {
-			return 0, err
-		}
-
-		if resLen > 0 {
-			return resLen, nil
-		}
-
-		rows.rs.done = true
-	}
-}
-
-func (rows *binaryRows) NextResultSet() error {
-	resLen, err := rows.nextNotEmptyResultSet()
-	if err != nil {
-		return err
-	}
-
-	rows.rs.columns, err = rows.bc.readColumns(resLen)
-	return err
-}
-
-func (rows *binaryRows) Next(dest []driver.Value) error {
-	if mc := rows.bc; mc != nil {
-		if err := mc.error(); err != nil {
-			return err
-		}
-
-		// Fetch next row from stream
-		return rows.readRow(dest)
-	}
-	return io.EOF
-}
-
-func (rows *textRows) NextResultSet() (err error) {
-	resLen, err := rows.nextNotEmptyResultSet()
-	if err != nil {
-		return err
-	}
-
-	rows.rs.columns, err = rows.bc.readColumns(resLen)
-	return err
-}
-
-func (rows *textRows) Next(dest []driver.Value) error {
-	if mc := rows.bc; mc != nil {
-		if err := mc.error(); err != nil {
-			return err
-		}
-
-		// Fetch next row from stream
-		return rows.readRow(dest)
-	}
-	return io.EOF
+func (r *Rows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
+	panic("implement me!")
 }
