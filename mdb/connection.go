@@ -46,17 +46,39 @@ func (db *Conn)	Close() (err error) {
 //
 // Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
 func (db *Conn)	Begin() (xact driver.Tx, err error) {
-	return db.begin(false)
+	return db.begin(context.Background(), DEFAULT_XACT_OPTIONS)
 }
 
-func (db *Conn) begin(readOnly bool) (xact driver.Tx, err error) {
+// BeginTx starts and returns a new transaction.
+// If the context is canceled by the user the sql package will
+// call Tx.Rollback before discarding and closing the connection.
+//
+// This must check opts.Isolation to determine if there is a set
+// isolation level. If the driver does not support a non-default
+// level and one is set or if there is a non-default isolation level
+// that is not supported, an error must be returned.
+//
+// This must also check opts.ReadOnly to determine if the read-only
+// value is true to either set the read-only transaction property if supported
+// or return an error if it is not supported.
+func (db *Conn) BeginTx(ctx context.Context, xactOpts driver.TxOptions) (driver.Tx, error) {
+	return db.begin(ctx, xactOpts)
+}
+
+func (db *Conn) begin(ctx context.Context, xactOpts driver.TxOptions) (xact driver.Tx, err error) {
 	if db.IsClosed() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
 
-	var resp *odbc.XactResponse
-	resp, err = db.MDBServiceClient.Begin(context.Background(), DEFAULT_XACT_REQ)
+	var (
+		req = &odbc.XactRequest{
+			IsolationLevel: int32(xactOpts.Isolation),
+			ReadOnly:       xactOpts.ReadOnly,
+		}
+		resp *odbc.XactResponse
+	)
+	resp, err = db.MDBServiceClient.Begin(ctx, req)
 	if err != nil {
 		errLog.Print(err)
 		//err = driver.ErrBadConn
@@ -66,22 +88,6 @@ func (db *Conn) begin(readOnly bool) (xact driver.Tx, err error) {
 
 	return CreateTransaction(resp.GetXactId(), DEFAULT_XACT_OPTIONS, db), err
 }
-
-//// BeginTx starts and returns a new transaction.
-//// If the context is canceled by the user the sql package will
-//// call Tx.Rollback before discarding and closing the connection.
-////
-//// This must check opts.Isolation to determine if there is a set
-//// isolation level. If the driver does not support a non-default
-//// level and one is set or if there is a non-default isolation level
-//// that is not supported, an error must be returned.
-////
-//// This must also check opts.ReadOnly to determine if the read-only
-//// value is true to either set the read-only transaction property if supported
-//// or return an error if it is not supported.
-//func BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
-//
-//}
 
 // Execer is an optional interface that may be implemented by a Conn.
 //

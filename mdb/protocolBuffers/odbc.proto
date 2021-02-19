@@ -9,7 +9,7 @@ option go_package = "gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/od
 
 
 
-message DummyReq {}
+message DummyRequest {}
 
 message XactRequest {
     int32 isolation_level = 1;
@@ -22,6 +22,10 @@ message XactResponse {
 //    bool   success = 2;
 }
 
+message CloseResponse {}
+message LoadRequest {}
+message LoadResponse {}
+
 
 // Query Services
 // Query Services define all the different gRPC queries that can be performed within the bSQL Protocol Buffer
@@ -33,10 +37,11 @@ service MDBService {
 
     // Register new connection
 
-    // 
-
     // Begin: Start Transaction
-    rpc Begin(XactRequest) returns (XactResponse) {};
+    rpc Begin(XactRequest)  returns (XactResponse) {};
+
+    // Close: Close session and all active transactions
+    rpc Close(DummyRequest) returns (CloseResponse) {};
 
     // Exec:  Execute a statement / command
     // Query: Query the database for information
@@ -44,6 +49,8 @@ service MDBService {
     // Query sends a single bSQL statement and returns its corresponding response
     // rpc Query(QueryRequest) returns (QueryResponse) {};
 
+
+    rpc Load(stream LoadRequest) returns (LoadResponse) {};
 
     // Close
 
