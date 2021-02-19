@@ -25,14 +25,14 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-type DummyReq struct {
+type DummyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *DummyReq) Reset() {
-	*x = DummyReq{}
+func (x *DummyRequest) Reset() {
+	*x = DummyRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_odbc_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -40,13 +40,13 @@ func (x *DummyReq) Reset() {
 	}
 }
 
-func (x *DummyReq) String() string {
+func (x *DummyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DummyReq) ProtoMessage() {}
+func (*DummyRequest) ProtoMessage() {}
 
-func (x *DummyReq) ProtoReflect() protoreflect.Message {
+func (x *DummyRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_odbc_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -58,8 +58,8 @@ func (x *DummyReq) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DummyReq.ProtoReflect.Descriptor instead.
-func (*DummyReq) Descriptor() ([]byte, []int) {
+// Deprecated: Use DummyRequest.ProtoReflect.Descriptor instead.
+func (*DummyRequest) Descriptor() ([]byte, []int) {
 	return file_odbc_proto_rawDescGZIP(), []int{0}
 }
 
@@ -123,8 +123,7 @@ type XactResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	XactId  uint64 `protobuf:"varint,1,opt,name=xact_id,json=xactId,proto3" json:"xact_id,omitempty"`
-	Success bool   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	XactId uint64 `protobuf:"varint,1,opt,name=xact_id,json=xactId,proto3" json:"xact_id,omitempty"` //    bool   success = 2;
 }
 
 func (x *XactResponse) Reset() {
@@ -166,36 +165,356 @@ func (x *XactResponse) GetXactId() uint64 {
 	return 0
 }
 
-func (x *XactResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
+type ExecRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Statement string `protobuf:"bytes,1,opt,name=statement,proto3" json:"statement,omitempty"`
+}
+
+func (x *ExecRequest) Reset() {
+	*x = ExecRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
 	}
-	return false
+}
+
+func (x *ExecRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecRequest) ProtoMessage() {}
+
+func (x *ExecRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecRequest.ProtoReflect.Descriptor instead.
+func (*ExecRequest) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ExecRequest) GetStatement() string {
+	if x != nil {
+		return x.Statement
+	}
+	return ""
+}
+
+type ExecResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Response     string `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	InsertId     int64  `protobuf:"varint,2,opt,name=insert_id,json=insertId,proto3" json:"insert_id,omitempty"`
+	AffectedRows int64  `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+}
+
+func (x *ExecResponse) Reset() {
+	*x = ExecResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExecResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecResponse) ProtoMessage() {}
+
+func (x *ExecResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecResponse.ProtoReflect.Descriptor instead.
+func (*ExecResponse) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ExecResponse) GetResponse() string {
+	if x != nil {
+		return x.Response
+	}
+	return ""
+}
+
+func (x *ExecResponse) GetInsertId() int64 {
+	if x != nil {
+		return x.InsertId
+	}
+	return 0
+}
+
+func (x *ExecResponse) GetAffectedRows() int64 {
+	if x != nil {
+		return x.AffectedRows
+	}
+	return 0
+}
+
+type QueryRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *QueryRequest) Reset() {
+	*x = QueryRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryRequest) ProtoMessage() {}
+
+func (x *QueryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryRequest.ProtoReflect.Descriptor instead.
+func (*QueryRequest) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{5}
+}
+
+type QueryResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *QueryResponse) Reset() {
+	*x = QueryResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryResponse) ProtoMessage() {}
+
+func (x *QueryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryResponse.ProtoReflect.Descriptor instead.
+func (*QueryResponse) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{6}
+}
+
+type CloseResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *CloseResponse) Reset() {
+	*x = CloseResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *CloseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloseResponse) ProtoMessage() {}
+
+func (x *CloseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloseResponse.ProtoReflect.Descriptor instead.
+func (*CloseResponse) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{7}
+}
+
+type LoadRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *LoadRequest) Reset() {
+	*x = LoadRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LoadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoadRequest) ProtoMessage() {}
+
+func (x *LoadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoadRequest.ProtoReflect.Descriptor instead.
+func (*LoadRequest) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{8}
+}
+
+type LoadResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *LoadResponse) Reset() {
+	*x = LoadResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_odbc_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LoadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoadResponse) ProtoMessage() {}
+
+func (x *LoadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_odbc_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoadResponse.ProtoReflect.Descriptor instead.
+func (*LoadResponse) Descriptor() ([]byte, []int) {
+	return file_odbc_proto_rawDescGZIP(), []int{9}
 }
 
 var File_odbc_proto protoreflect.FileDescriptor
 
 var file_odbc_proto_rawDesc = []byte{
 	0x0a, 0x0a, 0x6f, 0x64, 0x62, 0x63, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x04, 0x62, 0x73,
-	0x71, 0x6c, 0x22, 0x0a, 0x0a, 0x08, 0x44, 0x75, 0x6d, 0x6d, 0x79, 0x52, 0x65, 0x71, 0x22, 0x53,
-	0x0a, 0x0b, 0x58, 0x61, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x27, 0x0a,
-	0x0f, 0x69, 0x73, 0x6f, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x65, 0x76, 0x65, 0x6c,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0e, 0x69, 0x73, 0x6f, 0x6c, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x1b, 0x0a, 0x09, 0x72, 0x65, 0x61, 0x64, 0x5f, 0x6f,
-	0x6e, 0x6c, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x72, 0x65, 0x61, 0x64, 0x4f,
-	0x6e, 0x6c, 0x79, 0x22, 0x41, 0x0a, 0x0c, 0x58, 0x61, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x12, 0x17, 0x0a, 0x07, 0x78, 0x61, 0x63, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x78, 0x61, 0x63, 0x74, 0x49, 0x64, 0x12, 0x18, 0x0a, 0x07,
-	0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73,
-	0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x32, 0x3e, 0x0a, 0x0a, 0x4d, 0x44, 0x42, 0x53, 0x65, 0x72,
-	0x76, 0x69, 0x63, 0x65, 0x12, 0x30, 0x0a, 0x05, 0x42, 0x65, 0x67, 0x69, 0x6e, 0x12, 0x11, 0x2e,
-	0x62, 0x73, 0x71, 0x6c, 0x2e, 0x58, 0x61, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x12, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x58, 0x61, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x3f, 0x5a, 0x3d, 0x67, 0x69, 0x74, 0x6c, 0x61, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f,
-	0x75, 0x74, 0x69, 0x6c, 0x69, 0x74, 0x69, 0x65, 0x73, 0x2f, 0x6f, 0x64, 0x62, 0x63, 0x2f, 0x6d,
-	0x64, 0x62, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x42, 0x75, 0x66, 0x66, 0x65,
-	0x72, 0x73, 0x2f, 0x6f, 0x64, 0x62, 0x63, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x71, 0x6c, 0x22, 0x0e, 0x0a, 0x0c, 0x44, 0x75, 0x6d, 0x6d, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x22, 0x53, 0x0a, 0x0b, 0x58, 0x61, 0x63, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x27, 0x0a, 0x0f, 0x69, 0x73, 0x6f, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c,
+	0x65, 0x76, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0e, 0x69, 0x73, 0x6f, 0x6c,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x1b, 0x0a, 0x09, 0x72, 0x65,
+	0x61, 0x64, 0x5f, 0x6f, 0x6e, 0x6c, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x72,
+	0x65, 0x61, 0x64, 0x4f, 0x6e, 0x6c, 0x79, 0x22, 0x27, 0x0a, 0x0c, 0x58, 0x61, 0x63, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x17, 0x0a, 0x07, 0x78, 0x61, 0x63, 0x74, 0x5f,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x78, 0x61, 0x63, 0x74, 0x49, 0x64,
+	0x22, 0x2b, 0x0a, 0x0b, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x1c, 0x0a, 0x09, 0x73, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x09, 0x73, 0x74, 0x61, 0x74, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0x6c, 0x0a,
+	0x0c, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1a, 0x0a,
+	0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x69, 0x6e, 0x73,
+	0x65, 0x72, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x69, 0x6e,
+	0x73, 0x65, 0x72, 0x74, 0x49, 0x64, 0x12, 0x23, 0x0a, 0x0d, 0x61, 0x66, 0x66, 0x65, 0x63, 0x74,
+	0x65, 0x64, 0x5f, 0x72, 0x6f, 0x77, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x61,
+	0x66, 0x66, 0x65, 0x63, 0x74, 0x65, 0x64, 0x52, 0x6f, 0x77, 0x73, 0x22, 0x0e, 0x0a, 0x0c, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x0f, 0x0a, 0x0d, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x0f, 0x0a, 0x0d,
+	0x43, 0x6c, 0x6f, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x0d, 0x0a,
+	0x0b, 0x4c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x0e, 0x0a, 0x0c,
+	0x4c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x8c, 0x02, 0x0a,
+	0x0a, 0x4d, 0x44, 0x42, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x30, 0x0a, 0x05, 0x42,
+	0x65, 0x67, 0x69, 0x6e, 0x12, 0x11, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x58, 0x61, 0x63, 0x74,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x12, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x58,
+	0x61, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x32, 0x0a,
+	0x05, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x12, 0x12, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x44, 0x75,
+	0x6d, 0x6d, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x62, 0x73, 0x71,
+	0x6c, 0x2e, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x00, 0x12, 0x2f, 0x0a, 0x04, 0x45, 0x78, 0x65, 0x63, 0x12, 0x11, 0x2e, 0x62, 0x73, 0x71, 0x6c,
+	0x2e, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x12, 0x2e, 0x62,
+	0x73, 0x71, 0x6c, 0x2e, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x00, 0x12, 0x34, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x12, 0x2e, 0x62, 0x73,
+	0x71, 0x6c, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x13, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x30, 0x01, 0x12, 0x31, 0x0a, 0x04, 0x4c, 0x6f, 0x61, 0x64,
+	0x12, 0x11, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x4c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x12, 0x2e, 0x62, 0x73, 0x71, 0x6c, 0x2e, 0x4c, 0x6f, 0x61, 0x64, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x42, 0x3f, 0x5a, 0x3d, 0x67,
+	0x69, 0x74, 0x6c, 0x61, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x75, 0x74, 0x69, 0x6c, 0x69, 0x74, 0x69, 0x65, 0x73, 0x2f, 0x6f,
+	0x64, 0x62, 0x63, 0x2f, 0x6d, 0x64, 0x62, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c,
+	0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x73, 0x2f, 0x6f, 0x64, 0x62, 0x63, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -210,17 +529,32 @@ func file_odbc_proto_rawDescGZIP() []byte {
 	return file_odbc_proto_rawDescData
 }
 
-var file_odbc_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_odbc_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_odbc_proto_goTypes = []interface{}{
-	(*DummyReq)(nil),     // 0: bsql.DummyReq
-	(*XactRequest)(nil),  // 1: bsql.XactRequest
-	(*XactResponse)(nil), // 2: bsql.XactResponse
+	(*DummyRequest)(nil),  // 0: bsql.DummyRequest
+	(*XactRequest)(nil),   // 1: bsql.XactRequest
+	(*XactResponse)(nil),  // 2: bsql.XactResponse
+	(*ExecRequest)(nil),   // 3: bsql.ExecRequest
+	(*ExecResponse)(nil),  // 4: bsql.ExecResponse
+	(*QueryRequest)(nil),  // 5: bsql.QueryRequest
+	(*QueryResponse)(nil), // 6: bsql.QueryResponse
+	(*CloseResponse)(nil), // 7: bsql.CloseResponse
+	(*LoadRequest)(nil),   // 8: bsql.LoadRequest
+	(*LoadResponse)(nil),  // 9: bsql.LoadResponse
 }
 var file_odbc_proto_depIdxs = []int32{
 	1, // 0: bsql.MDBService.Begin:input_type -> bsql.XactRequest
-	2, // 1: bsql.MDBService.Begin:output_type -> bsql.XactResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 1: bsql.MDBService.Close:input_type -> bsql.DummyRequest
+	3, // 2: bsql.MDBService.Exec:input_type -> bsql.ExecRequest
+	5, // 3: bsql.MDBService.Query:input_type -> bsql.QueryRequest
+	8, // 4: bsql.MDBService.Load:input_type -> bsql.LoadRequest
+	2, // 5: bsql.MDBService.Begin:output_type -> bsql.XactResponse
+	7, // 6: bsql.MDBService.Close:output_type -> bsql.CloseResponse
+	4, // 7: bsql.MDBService.Exec:output_type -> bsql.ExecResponse
+	6, // 8: bsql.MDBService.Query:output_type -> bsql.QueryResponse
+	9, // 9: bsql.MDBService.Load:output_type -> bsql.LoadResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -233,7 +567,7 @@ func file_odbc_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_odbc_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DummyReq); i {
+			switch v := v.(*DummyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -268,6 +602,90 @@ func file_odbc_proto_init() {
 				return nil
 			}
 		}
+		file_odbc_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExecRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_odbc_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExecResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_odbc_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_odbc_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_odbc_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CloseResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_odbc_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LoadRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_odbc_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LoadResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -275,7 +693,7 @@ func file_odbc_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_odbc_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

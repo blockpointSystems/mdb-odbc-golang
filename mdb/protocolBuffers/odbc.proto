@@ -22,6 +22,22 @@ message XactResponse {
 //    bool   success = 2;
 }
 
+message ExecRequest {
+    string statement = 1;
+}
+
+message ExecResponse {
+    string response      = 1;
+    int64  insert_id     = 2;
+    int64  affected_rows = 3;
+}
+
+
+message QueryRequest {}
+
+message QueryResponse {}
+
+
 message CloseResponse {}
 message LoadRequest {}
 message LoadResponse {}
@@ -37,14 +53,22 @@ service MDBService {
 
     // Register new connection
 
+
+    //    Transactions    //
+
     // Begin: Start Transaction
     rpc Begin(XactRequest)  returns (XactResponse) {};
-
     // Close: Close session and all active transactions
     rpc Close(DummyRequest) returns (CloseResponse) {};
 
+
+    //    Commands    //
+
     // Exec:  Execute a statement / command
+    rpc Exec(ExecRequest)  returns (ExecResponse) {};
+
     // Query: Query the database for information
+    rpc Query(QueryRequest)  returns (stream QueryResponse) {};
 
     // Query sends a single bSQL statement and returns its corresponding response
     // rpc Query(QueryRequest) returns (QueryResponse) {};

@@ -20,6 +20,13 @@ const _ = grpc.SupportPackageIsVersion7
 type MDBServiceClient interface {
 	// Begin: Start Transaction
 	Begin(ctx context.Context, in *XactRequest, opts ...grpc.CallOption) (*XactResponse, error)
+	// Close: Close session and all active transactions
+	Close(ctx context.Context, in *DummyRequest, opts ...grpc.CallOption) (*CloseResponse, error)
+	// Exec:  Execute a statement / command
+	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
+	// Query: Query the database for information
+	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (MDBService_QueryClient, error)
+	Load(ctx context.Context, opts ...grpc.CallOption) (MDBService_LoadClient, error)
 }
 
 type mDBServiceClient struct {
@@ -39,12 +46,103 @@ func (c *mDBServiceClient) Begin(ctx context.Context, in *XactRequest, opts ...g
 	return out, nil
 }
 
+func (c *mDBServiceClient) Close(ctx context.Context, in *DummyRequest, opts ...grpc.CallOption) (*CloseResponse, error) {
+	out := new(CloseResponse)
+	err := c.cc.Invoke(ctx, "/bsql.MDBService/Close", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mDBServiceClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error) {
+	out := new(ExecResponse)
+	err := c.cc.Invoke(ctx, "/bsql.MDBService/Exec", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mDBServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (MDBService_QueryClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MDBService_ServiceDesc.Streams[0], "/bsql.MDBService/Query", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mDBServiceQueryClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type MDBService_QueryClient interface {
+	Recv() (*QueryResponse, error)
+	grpc.ClientStream
+}
+
+type mDBServiceQueryClient struct {
+	grpc.ClientStream
+}
+
+func (x *mDBServiceQueryClient) Recv() (*QueryResponse, error) {
+	m := new(QueryResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *mDBServiceClient) Load(ctx context.Context, opts ...grpc.CallOption) (MDBService_LoadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &MDBService_ServiceDesc.Streams[1], "/bsql.MDBService/Load", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &mDBServiceLoadClient{stream}
+	return x, nil
+}
+
+type MDBService_LoadClient interface {
+	Send(*LoadRequest) error
+	CloseAndRecv() (*LoadResponse, error)
+	grpc.ClientStream
+}
+
+type mDBServiceLoadClient struct {
+	grpc.ClientStream
+}
+
+func (x *mDBServiceLoadClient) Send(m *LoadRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *mDBServiceLoadClient) CloseAndRecv() (*LoadResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(LoadResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MDBServiceServer is the server API for MDBService service.
 // All implementations must embed UnimplementedMDBServiceServer
 // for forward compatibility
 type MDBServiceServer interface {
 	// Begin: Start Transaction
 	Begin(context.Context, *XactRequest) (*XactResponse, error)
+	// Close: Close session and all active transactions
+	Close(context.Context, *DummyRequest) (*CloseResponse, error)
+	// Exec:  Execute a statement / command
+	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
+	// Query: Query the database for information
+	Query(*QueryRequest, MDBService_QueryServer) error
+	Load(MDBService_LoadServer) error
 	mustEmbedUnimplementedMDBServiceServer()
 }
 
@@ -54,6 +152,18 @@ type UnimplementedMDBServiceServer struct {
 
 func (UnimplementedMDBServiceServer) Begin(context.Context, *XactRequest) (*XactResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Begin not implemented")
+}
+func (UnimplementedMDBServiceServer) Close(context.Context, *DummyRequest) (*CloseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
+}
+func (UnimplementedMDBServiceServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Exec not implemented")
+}
+func (UnimplementedMDBServiceServer) Query(*QueryRequest, MDBService_QueryServer) error {
+	return status.Errorf(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedMDBServiceServer) Load(MDBService_LoadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Load not implemented")
 }
 func (UnimplementedMDBServiceServer) mustEmbedUnimplementedMDBServiceServer() {}
 
@@ -86,6 +196,89 @@ func _MDBService_Begin_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MDBService_Close_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DummyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MDBServiceServer).Close(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bsql.MDBService/Close",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MDBServiceServer).Close(ctx, req.(*DummyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MDBService_Exec_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MDBServiceServer).Exec(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bsql.MDBService/Exec",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MDBServiceServer).Exec(ctx, req.(*ExecRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MDBService_Query_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(QueryRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MDBServiceServer).Query(m, &mDBServiceQueryServer{stream})
+}
+
+type MDBService_QueryServer interface {
+	Send(*QueryResponse) error
+	grpc.ServerStream
+}
+
+type mDBServiceQueryServer struct {
+	grpc.ServerStream
+}
+
+func (x *mDBServiceQueryServer) Send(m *QueryResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _MDBService_Load_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MDBServiceServer).Load(&mDBServiceLoadServer{stream})
+}
+
+type MDBService_LoadServer interface {
+	SendAndClose(*LoadResponse) error
+	Recv() (*LoadRequest, error)
+	grpc.ServerStream
+}
+
+type mDBServiceLoadServer struct {
+	grpc.ServerStream
+}
+
+func (x *mDBServiceLoadServer) SendAndClose(m *LoadResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *mDBServiceLoadServer) Recv() (*LoadRequest, error) {
+	m := new(LoadRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MDBService_ServiceDesc is the grpc.ServiceDesc for MDBService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -97,7 +290,26 @@ var MDBService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Begin",
 			Handler:    _MDBService_Begin_Handler,
 		},
+		{
+			MethodName: "Close",
+			Handler:    _MDBService_Close_Handler,
+		},
+		{
+			MethodName: "Exec",
+			Handler:    _MDBService_Exec_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Query",
+			Handler:       _MDBService_Query_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Load",
+			Handler:       _MDBService_Load_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "odbc.proto",
 }
