@@ -22,7 +22,7 @@ type Conn struct {
 }
 
 // Prepare returns a prepared statement, bound to this connection.
-func (db *Conn)	Prepare(query string) (s Stmt, err error) {
+func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 	panic("implement me")
 	return
 }
@@ -43,7 +43,7 @@ func (db *Conn)	Close() (err error) {
 // Begin starts and returns a new transaction.
 //
 // Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
-func (db *Conn)	Begin() (xact Tx, err error) {
+func (db *Conn)	Begin() (xact driver.Tx, err error) {
 	panic("implement me")
 	return
 }
@@ -59,7 +59,7 @@ func (db *Conn)	Begin() (xact Tx, err error) {
 // Deprecated: Drivers should implement ExecerContext instead.
 //type Execer interface {}
 
-func (db *Conn) Exec(query string, args []driver.Value) (result Result, err error) {
+func (db *Conn) Exec(query string, args []driver.Value) (result driver.Result, err error) {
 	// Make sure connection is still live
 	if db.IsClosed() {
 		errLog.Print(ErrInvalidConn)

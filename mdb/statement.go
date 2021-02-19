@@ -7,6 +7,7 @@ import "database/sql/driver"
 type Stmt struct {
 
 }
+
 // Close closes the statement.
 //
 // As of Go 1.1, a Stmt will not be closed if it's in use
@@ -32,7 +33,7 @@ func (s *Stmt) NumInput() int {
 // as an INSERT or UPDATE.
 //
 // Deprecated: Drivers should implement StmtExecContext instead (or additionally).
-func (s *Stmt) Exec(args []driver.Value) (Result, error) {
+func (s *Stmt) Exec(args []driver.Value) (driver.Result, error) {
 	panic("implement me!")
 }
 
@@ -40,6 +41,6 @@ func (s *Stmt) Exec(args []driver.Value) (Result, error) {
 // SELECT.
 //
 // Deprecated: Drivers should implement StmtQueryContext instead (or additionally).
-func (s *Stmt) Query(args []driver.Value) (Rows, error) {
+func (s *Stmt) Query(args []driver.Value) (driver.Rows, error) {
 	panic("implement me!")
 }
