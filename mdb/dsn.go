@@ -27,12 +27,13 @@ var (
 // the NewConfig function should be used, which sets default values.
 type Config struct {
 	User             string            // Username
-	Passwd           string            // Password (requires User)
+	Password         string            // Password (requires User)
 	Net              string            // Network type
 	Addr             string            // Network address (requires Net)
 	DBName           string            // Database name
 	Params           map[string]string // Connection parameters
-	Collation        string            // Connection collation
+	// TODO: Add Support
+	//Collation        string            // Connection collation
 	Loc              *time.Location    // Location for time.Time values
 	MaxAllowedPacket int               // Max packet size allowed
 	ServerPubKey     string            // Server public key name
@@ -43,15 +44,13 @@ type Config struct {
 	ReadTimeout      time.Duration     // I/O read timeout
 	WriteTimeout     time.Duration     // I/O write timeout
 
-	AllowAllFiles           bool // Allow all files to be used with LOAD DATA LOCAL INFILE
-	AllowCleartextPasswords bool // Allows the cleartext client side plugin
-	AllowNativePasswords    bool // Allows the native password authentication method
-	AllowOldPasswords       bool // Allows the old insecure password method
+	// TODO: Add Support
+	//AllowAllFiles           bool // Allow all files to be used with LOAD DATA LOCAL INFILE
 	CheckConnLiveness       bool // Check connections for liveness before using them
 	ClientFoundRows         bool // Return number of matching rows instead of rows changed
-	ColumnsWithAlias        bool // Prepend table alias to column names
+	//ColumnsWithAlias        bool // Prepend table alias to column names
 	InterpolateParams       bool // Interpolate placeholders into query string
-	MultiStatements         bool // Allow multiple statements in one query
+	//MultiStatements         bool // Allow multiple statements in one query
 	ParseTime               bool // Parse time values to time.Time
 	RejectReadOnly          bool // Reject read-only connections
 }
@@ -59,16 +58,16 @@ type Config struct {
 // NewConfig creates a new Config and sets default values.
 func NewConfig() *Config {
 	return &Config{
-		Collation:            defaultCollation,
+		//Collation:            defaultCollation,
 		Loc:                  time.UTC,
 		MaxAllowedPacket:     defaultMaxAllowedPacket,
-		AllowNativePasswords: true,
 		CheckConnLiveness:    true,
 	}
 }
 
 func (cfg *Config) Clone() *Config {
-	cp := *cfg
+	var cp = *cfg
+
 	if cp.tls != nil {
 		cp.tls = cfg.tls.Clone()
 	}
@@ -88,9 +87,9 @@ func (cfg *Config) Clone() *Config {
 }
 
 func (cfg *Config) normalize() error {
-	if cfg.InterpolateParams && unsafeCollations[cfg.Collation] {
-		return errInvalidDSNUnsafeCollation
-	}
+	//if cfg.InterpolateParams && unsafeCollations[cfg.Collation] {
+	//	return errInvalidDSNUnsafeCollation
+	//}
 
 	// Set default network if empty
 	if cfg.Net == "" {
@@ -101,9 +100,9 @@ func (cfg *Config) normalize() error {
 	if cfg.Addr == "" {
 		switch cfg.Net {
 		case "tcp":
-			cfg.Addr = "127.0.0.1:3306"
+			cfg.Addr = fmt.Sprintf("127.0.0.1:%s", DEFAULT_ADDR_PORT)
 		case "unix":
-			cfg.Addr = "/tmp/mysql.sock"
+			cfg.Addr = "/tmp/mdb.sock"
 		default:
 			return errors.New("default addr for network '" + cfg.Net + "' unknown")
 		}
@@ -163,9 +162,9 @@ func (cfg *Config) FormatDSN() string {
 	// [username[:password]@]
 	if len(cfg.User) > 0 {
 		buf.WriteString(cfg.User)
-		if len(cfg.Passwd) > 0 {
+		if len(cfg.Password) > 0 {
 			buf.WriteByte(':')
-			buf.WriteString(cfg.Passwd)
+			buf.WriteString(cfg.Password)
 		}
 		buf.WriteByte('@')
 	}
@@ -187,22 +186,10 @@ func (cfg *Config) FormatDSN() string {
 	// [?param1=value1&...&paramN=valueN]
 	hasParam := false
 
-	if cfg.AllowAllFiles {
-		hasParam = true
-		buf.WriteString("?allowAllFiles=true")
-	}
-
-	if cfg.AllowCleartextPasswords {
-		writeDSNParam(&buf, &hasParam, "allowCleartextPasswords", "true")
-	}
-
-	if !cfg.AllowNativePasswords {
-		writeDSNParam(&buf, &hasParam, "allowNativePasswords", "false")
-	}
-
-	if cfg.AllowOldPasswords {
-		writeDSNParam(&buf, &hasParam, "allowOldPasswords", "true")
-	}
+	//if cfg.AllowAllFiles {
+	//	hasParam = true
+	//	buf.WriteString("?allowAllFiles=true")
+	//}
 
 	if !cfg.CheckConnLiveness {
 		writeDSNParam(&buf, &hasParam, "checkConnLiveness", "false")
@@ -212,13 +199,13 @@ func (cfg *Config) FormatDSN() string {
 		writeDSNParam(&buf, &hasParam, "clientFoundRows", "true")
 	}
 
-	if col := cfg.Collation; col != defaultCollation && len(col) > 0 {
-		writeDSNParam(&buf, &hasParam, "collation", col)
-	}
+	//if col := cfg.Collation; col != defaultCollation && len(col) > 0 {
+	//	writeDSNParam(&buf, &hasParam, "collation", col)
+	//}
 
-	if cfg.ColumnsWithAlias {
-		writeDSNParam(&buf, &hasParam, "columnsWithAlias", "true")
-	}
+	//if cfg.ColumnsWithAlias {
+	//	writeDSNParam(&buf, &hasParam, "columnsWithAlias", "true")
+	//}
 
 	if cfg.InterpolateParams {
 		writeDSNParam(&buf, &hasParam, "interpolateParams", "true")
@@ -226,10 +213,6 @@ func (cfg *Config) FormatDSN() string {
 
 	if cfg.Loc != time.UTC && cfg.Loc != nil {
 		writeDSNParam(&buf, &hasParam, "loc", url.QueryEscape(cfg.Loc.String()))
-	}
-
-	if cfg.MultiStatements {
-		writeDSNParam(&buf, &hasParam, "multiStatements", "true")
 	}
 
 	if cfg.ParseTime {
@@ -302,7 +285,7 @@ func ParseDSN(dsn string) (cfg *Config, err error) {
 						// Find the first ':' in dsn[:j]
 						for k = 0; k < j; k++ {
 							if dsn[k] == ':' {
-								cfg.Passwd = dsn[k+1 : j]
+								cfg.Password = dsn[k+1 : j]
 								break
 							}
 						}
@@ -367,42 +350,18 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 
 		// cfg params
 		switch value := param[1]; param[0] {
-		// Disable INFILE allowlist / enable all files
-		case "allowAllFiles":
-			var isBool bool
-			cfg.AllowAllFiles, isBool = readBool(value)
-			if !isBool {
-				return errors.New("invalid bool value: " + value)
-			}
-
-		// Use cleartext authentication mode (MySQL 5.5.10+)
-		case "allowCleartextPasswords":
-			var isBool bool
-			cfg.AllowCleartextPasswords, isBool = readBool(value)
-			if !isBool {
-				return errors.New("invalid bool value: " + value)
-			}
-
-		// Use native password authentication
-		case "allowNativePasswords":
-			var isBool bool
-			cfg.AllowNativePasswords, isBool = readBool(value)
-			if !isBool {
-				return errors.New("invalid bool value: " + value)
-			}
-
-		// Use old authentication mode (pre MySQL 4.1)
-		case "allowOldPasswords":
-			var isBool bool
-			cfg.AllowOldPasswords, isBool = readBool(value)
-			if !isBool {
-				return errors.New("invalid bool value: " + value)
-			}
+		//// Disable INFILE allowlist / enable all files
+		//case "allowAllFiles":
+		//	var isBool bool
+		//	cfg.AllowAllFiles, isBool = parseBool(value)
+		//	if !isBool {
+		//		return errors.New("invalid bool value: " + value)
+		//	}
 
 		// Check connections for Liveness before using them
 		case "checkConnLiveness":
 			var isBool bool
-			cfg.CheckConnLiveness, isBool = readBool(value)
+			cfg.CheckConnLiveness, isBool = parseBool(value)
 			if !isBool {
 				return errors.New("invalid bool value: " + value)
 			}
@@ -410,22 +369,22 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 		// Switch "rowsAffected" mode
 		case "clientFoundRows":
 			var isBool bool
-			cfg.ClientFoundRows, isBool = readBool(value)
+			cfg.ClientFoundRows, isBool = parseBool(value)
 			if !isBool {
 				return errors.New("invalid bool value: " + value)
 			}
 
-		// Collation
-		case "collation":
-			cfg.Collation = value
-			break
-
-		case "columnsWithAlias":
-			var isBool bool
-			cfg.ColumnsWithAlias, isBool = readBool(value)
-			if !isBool {
-				return errors.New("invalid bool value: " + value)
-			}
+		//// Collation
+		//case "collation":
+		//	cfg.Collation = value
+		//	break
+		//
+		//case "columnsWithAlias":
+		//	var isBool bool
+		//	cfg.ColumnsWithAlias, isBool = parseBool(value)
+		//	if !isBool {
+		//		return errors.New("invalid bool value: " + value)
+		//	}
 
 		// Compression
 		case "compress":
@@ -434,7 +393,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 		// Enable client side placeholder substitution
 		case "interpolateParams":
 			var isBool bool
-			cfg.InterpolateParams, isBool = readBool(value)
+			cfg.InterpolateParams, isBool = parseBool(value)
 			if !isBool {
 				return errors.New("invalid bool value: " + value)
 			}
@@ -449,18 +408,10 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return
 			}
 
-		// multiple statements in one query
-		case "multiStatements":
-			var isBool bool
-			cfg.MultiStatements, isBool = readBool(value)
-			if !isBool {
-				return errors.New("invalid bool value: " + value)
-			}
-
 		// time.Time parsing
 		case "parseTime":
 			var isBool bool
-			cfg.ParseTime, isBool = readBool(value)
+			cfg.ParseTime, isBool = parseBool(value)
 			if !isBool {
 				return errors.New("invalid bool value: " + value)
 			}
@@ -475,7 +426,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 		// Reject read-only connections
 		case "rejectReadOnly":
 			var isBool bool
-			cfg.RejectReadOnly, isBool = readBool(value)
+			cfg.RejectReadOnly, isBool = parseBool(value)
 			if !isBool {
 				return errors.New("invalid bool value: " + value)
 			}
@@ -501,7 +452,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 
 		// TLS-Encryption
 		case "tls":
-			boolValue, isBool := readBool(value)
+			boolValue, isBool := parseBool(value)
 			if isBool {
 				if boolValue {
 					cfg.TLSConfig = "true"
@@ -546,7 +497,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 
 func ensureHavePort(addr string) string {
 	if _, _, err := net.SplitHostPort(addr); err != nil {
-		return net.JoinHostPort(addr, "3306")
+		return net.JoinHostPort(addr, DEFAULT_ADDR_PORT)
 	}
 	return addr
 }

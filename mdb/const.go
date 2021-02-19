@@ -1,6 +1,10 @@
 package mdb
 
 const (
+	DEFAULT_ADDR_PORT = "8080"
+)
+
+const (
 	defaultAuthPlugin       = "mysql_native_password"
 	defaultMaxAllowedPacket = 4 << 20 // 4 MiB
 	minProtocolVersion      = 10

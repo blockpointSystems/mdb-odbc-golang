@@ -63,38 +63,30 @@ func (db *Conn) Exec(query string, args []driver.Value) (result Result, err erro
 	// Make sure connection is still live
 	if db.IsClosed() {
 		errLog.Print(ErrInvalidConn)
-		return nil, driver.ErrBadConn
+		err = driver.ErrBadConn
+		return
 	}
 
 	// Interpolate parameters if provided
 	if len(args) != 0 {
 		if !db.cfg.InterpolateParams {
-			return nil, driver.ErrSkip
+			err = driver.ErrBadConn
+			return
 		}
 		// try to interpolate the parameters to save extra roundtrips for preparing and closing a statement
 		prepared, err := db.interpolateParams(query, args)
 		if err != nil {
-			return nil, err
+			return
 		}
 		query = prepared
 	}
 
-	// Reset affected rows
-	db.affectedRows = 0
-	db.insertId = 0
-
-	err = db.exec(query)
-	if err == nil {
-		result = Result{
-			affectedRows: int64(db.affectedRows),
-			insertId:     int64(db.insertId),
-		}
-	}
+	result.affectedRows, result.insertId, err = db.exec(query)
 	return
 }
 
 // Internal function to execute commands
-func (db *Conn) exec(query string) (err error) {
+func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
 	// Send command
 
 	// Read Result
