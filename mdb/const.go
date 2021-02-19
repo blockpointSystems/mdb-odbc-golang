@@ -1,8 +1,26 @@
 package mdb
 
+import (
+	"database/sql/driver"
+	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
+)
+
 const (
 	DEFAULT_ADDR_PORT = "8080"
 )
+
+var (
+	DEFAULT_XACT_REQ = &odbc.XactRequest{
+		IsolationLevel: 1,
+		ReadOnly:       false,
+	}
+	DEFAULT_XACT_OPTIONS = driver.TxOptions{
+		Isolation: 1,
+		ReadOnly:  false,
+	}
+)
+
+
 
 const (
 	defaultAuthPlugin       = "mysql_native_password"

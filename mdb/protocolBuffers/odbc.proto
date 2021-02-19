@@ -2,92 +2,24 @@ syntax = "proto3";
 
 package bsql;
 
-import "google/protobuf/timestamp.proto";
+//import "google/protobuf/timestamp.proto";
 
 // bsqlpb is the golang package that will be used to communicate and cary out transactions with the database
-option go_package = "bsqlpb";
+option go_package = "gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc";
 
-
-// Transaction 
-//
-// - Database
-// - Login
-// - Statement
-message Transaction {
-    // MetaData for creating a new transaction
-    bool new_trancation     = 1;
-    bool atomic_transaction = 2;
-
-    // MetaData for continuing an old transaction
-    uint64 transaction_id = 3;
-
-    // Desired bSQL statement to execute
-    string b_s_q_l_statement = 4;
-}
-
-// Database
-message Database {
-    uint64 database_id   = 1;
-    string database_name = 2;
-};
-
-// Login
-message Login {
-    uint64 login_id = 1;
-    
-    string login_identifier = 2;
-    string password = 3;
-}
-
-// Timestamp
-message Timestamp {
-    google.protobuf.Timestamp received = 1;
-    google.protobuf.Timestamp returned = 2;
-}
-
-
-// QueryRequest 
-//
-// - Transaction
-// - MetaData
-//      - System Identifier
-//      - Login Packet
-message QueryRequest {
-    // Transaction information
-    Transaction xact = 1;
-
-    // MetaData
-    Database database  = 2;
-    Login login_packet = 3;
-}
-
-// QueryResponse
-//
-// - PacketId
-// - Statement Response
-// - xact Metadata
-//      - Timestamp 
-//      - Errors
-//
-message QueryResponse {
-    // response from the executed xaction
-    string response = 1;
-    
-    // timestamp information about when the xaction was received and returned
-    Timestamp timestamp = 2;
-    string    error     = 3;
-}
-
-message PacketQueryResponse {
-    string response = 1;
-//    Error error = 2;
-    int32 packet_number = 3;
-}
 
 
 message DummyReq {}
-message BeginResp {
 
+message XactRequest {
+    int32 isolation_level = 1;
+    bool  read_only       = 2;
+//    bool  atomic          = 3;
+}
+
+message XactResponse {
+    uint64 xact_id = 1;
+//    bool   success = 2;
 }
 
 
@@ -104,13 +36,13 @@ service MDBService {
     // 
 
     // Begin: Start Transaction
-    rpc Begin(DummyReq) returns (BeginResp) {};
+    rpc Begin(XactRequest) returns (XactResponse) {};
 
     // Exec:  Execute a statement / command
     // Query: Query the database for information
 
     // Query sends a single bSQL statement and returns its corresponding response
-    rpc Query(QueryRequest) returns (QueryResponse) {};
+    // rpc Query(QueryRequest) returns (QueryResponse) {};
 
 
     // Close

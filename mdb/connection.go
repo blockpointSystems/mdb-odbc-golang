@@ -1,8 +1,10 @@
 package mdb
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +20,7 @@ type Conn struct {
 	status statusFlag
 
 	// Operational
-
+	odbc.MDBServiceClient
 }
 
 // Prepare returns a prepared statement, bound to this connection.
@@ -44,9 +46,42 @@ func (db *Conn)	Close() (err error) {
 //
 // Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
 func (db *Conn)	Begin() (xact driver.Tx, err error) {
-	panic("implement me")
-	return
+	return db.begin(false)
 }
+
+func (db *Conn) begin(readOnly bool) (xact driver.Tx, err error) {
+	if db.IsClosed() {
+		errLog.Print(ErrInvalidConn)
+		return nil, driver.ErrBadConn
+	}
+
+	var resp *odbc.XactResponse
+	resp, err = db.MDBServiceClient.Begin(context.Background(), DEFAULT_XACT_REQ)
+	if err != nil {
+		errLog.Print(err)
+		//err = driver.ErrBadConn
+		err = db.markBadConn(err)
+		return
+	}
+
+	return CreateTransaction(resp.GetXactId(), DEFAULT_XACT_OPTIONS, db), err
+}
+
+//// BeginTx starts and returns a new transaction.
+//// If the context is canceled by the user the sql package will
+//// call Tx.Rollback before discarding and closing the connection.
+////
+//// This must check opts.Isolation to determine if there is a set
+//// isolation level. If the driver does not support a non-default
+//// level and one is set or if there is a non-default isolation level
+//// that is not supported, an error must be returned.
+////
+//// This must also check opts.ReadOnly to determine if the read-only
+//// value is true to either set the read-only transaction property if supported
+//// or return an error if it is not supported.
+//func BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
+//
+//}
 
 // Execer is an optional interface that may be implemented by a Conn.
 //
