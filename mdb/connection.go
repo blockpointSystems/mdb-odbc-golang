@@ -16,15 +16,57 @@ import (
 // Conn is assumed to be stateful.
 type Conn struct {
 	// Managerial
-	cfg    Config
+	cfg   *Config
 	status statusFlag
 
 	// Operational
 	odbc.MDBServiceClient
 }
 
-func CreateConnection(cfg Config) (conn *Conn, err error) {
+// Handles parameters set in DSN after the connection is established
+func (db *Conn) configureConnection() (err error) {
+	// Nothing to really do here, only the basic charset is allowed
 
+	//var cmdSet strings.Builder
+	//for param, val := range db.cfg.Params {
+	//	switch param {
+	//	// Charset: character_set_connection, character_set_client, character_set_results
+	//	case "charset":
+	//		charsets := strings.Split(val, ",")
+	//		for i := range charsets {
+	//			// ignore errors here - a charset may not exist
+	//			_, _, err = db.exec("SET NAMES " + charsets[i])
+	//			if err == nil {
+	//				break
+	//			}
+	//		}
+	//		if err != nil {
+	//			return
+	//		}
+	//
+	//	// Other system vars accumulated in a single SET command
+	//	default:
+	//		if cmdSet.Len() == 0 {
+	//			// Heuristic: 29 chars for each other key=value to reduce reallocations
+	//			cmdSet.Grow(4 + len(param) + 1 + len(val) + 30*(len(db.cfg.Params)-1))
+	//			cmdSet.WriteString("SET ")
+	//		} else {
+	//			cmdSet.WriteByte(',')
+	//		}
+	//		cmdSet.WriteString(param)
+	//		cmdSet.WriteByte('=')
+	//		cmdSet.WriteString(val)
+	//	}
+	//}
+	//
+	//if cmdSet.Len() > 0 {
+	//	err = db.exec(cmdSet.String())
+	//	if err != nil {
+	//		return
+	//	}
+	//}
+
+	return
 }
 
 // Prepare returns a prepared statement, bound to this connection.

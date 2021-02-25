@@ -3,6 +3,8 @@ package mdb
 import (
 	"context"
 	"database/sql/driver"
+	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
+	"google.golang.org/grpc"
 )
 
 type connector struct {
@@ -12,8 +14,31 @@ type connector struct {
 // Connect implements driver.Connector interface.
 // Connect returns a connection to the database.
 func (c *connector) Connect(ctx context.Context) (conn driver.Conn, err error) {
+	var (
+		mdbConn  *Conn
+		grpcConn *grpc.ClientConn
+	)
 
+	grpcConn, err = grpc.Dial(c.cfg.Addr)
+	if err != nil {
+		return
+	}
 
+	mdbConn = &Conn{
+		cfg:              c.cfg,
+	  //status:           0,
+
+		MDBServiceClient: odbc.NewMDBServiceClient(grpcConn),
+	}
+
+	err = mdbConn.configureConnection()
+	if err != nil {
+		// Close the connection and return
+		grpcConn.Close()
+		return
+	}
+
+	conn = mdbConn
 	return
 }
 
