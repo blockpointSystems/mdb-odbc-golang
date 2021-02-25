@@ -23,6 +23,10 @@ type Conn struct {
 	odbc.MDBServiceClient
 }
 
+func CreateConnection(cfg Config) (conn *Conn, err error) {
+
+}
+
 // Prepare returns a prepared statement, bound to this connection.
 func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 	panic("implement me")
