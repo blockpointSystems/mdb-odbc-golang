@@ -33,9 +33,55 @@ message ExecResponse {
 }
 
 
-message QueryRequest {}
+message QueryRequest {
+    string statement = 1;
+}
 
-message QueryResponse {}
+message QueryResponse {
+    int32    resp_length    = 1;
+    schema   resp_schema    = 2;
+    repeated row result_set = 3;
+    bool     done           = 4;
+}
+
+message schema {
+    string table_name = 1;
+    repeated string column_name   = 2;
+    repeated datatype column_type = 3;
+    string name       = 2;
+    bytes  data       = 3;
+
+}
+
+enum datatype {
+    BYTEARRAY = 0;
+    STRING = 1;
+
+    INT8   = 2;
+    UINT8  = 3;
+    INT16  = 4;
+    UINT16 = 5;
+    INT32  = 6;
+    UINT32 = 7;
+    INT64  = 8;
+    UINT64 = 9;
+
+    FLOAT32    = 10;
+    FLOAT64    = 11;
+    COMPLEX64  = 12;
+    COMPLEX128 = 13;
+
+    UINTPTR = 14;
+
+    BOOL = 15;
+
+    TIMESTAMP = 16;
+    UUID      = 17;
+}
+
+message row {
+    repeated bytes columns = 1;
+}
 
 
 message CloseResponse {}

@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
+	"io"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +23,10 @@ type Conn struct {
 
 	// Operational
 	odbc.MDBServiceClient
+
+	// Query
+	activeQuery bool
+	queryResponseStream odbc.MDBService_QueryClient
 }
 
 // Handles parameters set in DSN after the connection is established
@@ -145,96 +151,157 @@ func (db *Conn) begin(ctx context.Context, xactOpts driver.TxOptions) (xact driv
 //
 // Deprecated: Drivers should implement ExecerContext instead.
 //type Execer interface {}
+func (db *Conn) Exec(query string, args []driver.Value) (driver.Result, error) {
+	var (
+		result Result
+		err    error
+	)
 
-func (db *Conn) Exec(query string, args []driver.Value) (result driver.Result, err error) {
 	// Make sure connection is still live
 	if db.IsClosed() {
 		errLog.Print(ErrInvalidConn)
 		err = driver.ErrBadConn
-		return
+		return nil, err
 	}
 
 	// Interpolate parameters if provided
 	if len(args) != 0 {
 		if !db.cfg.InterpolateParams {
 			err = driver.ErrBadConn
-			return
+			return nil, err
 		}
 		// try to interpolate the parameters to save extra roundtrips for preparing and closing a statement
 		prepared, err := db.interpolateParams(query, args)
 		if err != nil {
-			return
+			return nil, err
 		}
 		query = prepared
 	}
 
 	result.affectedRows, result.insertId, err = db.exec(query)
-	return
+	return &result, err
 }
 
 // Internal function to execute commands
 func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
-	// Send command
+	var (
+		req = &odbc.ExecRequest{
+			Statement: query,
+		}
 
-	// Read Result
+		resp *odbc.ExecResponse
+	)
+
+	// Send the command
+	resp, err = db.MDBServiceClient.Exec(context.Background(), req)
+	if err != nil {
+		return
+	}
 
 	// Log affected Rows
+	affectedRows = resp.AffectedRows
 	// Log insert Id
+	insertId     = resp.InsertId
 
-	// Clean up
-
-	// Return
 	return
 }
 
-//func (bc *bsqlConn) Query(query string, args []driver.Value) (driver.Rows, error) {
-//	return bc.query(query, args)
-//}
-//
-//func (bc *bsqlConn) query(query string, args []driver.Value) (*textRows, error) {
-//	if bc.closed.IsSet() {
-//		errLog.Print(ErrInvalidConn)
-//		return nil, driver.ErrBadConn
-//	}
-//	if len(args) != 0 {
-//		if !bc.cfg.InterpolateParams {
-//			return nil, driver.ErrSkip
-//		}
-//		// try client-side prepare to reduce roundtrip
-//		prepared, err := bc.interpolateParams(query, args)
-//		if err != nil {
-//			return nil, err
-//		}
-//		query = prepared
-//	}
-//	// Send command
-//	err := bc.writeCommandPacketStr(comQuery, query)
-//	if err == nil {
-//		// Read Result
-//		var resLen int
-//		resLen, err = bc.readResultSetHeaderPacket()
-//		if err == nil {
-//			rows := new(textRows)
-//			rows.bc = bc
-//
-//			if resLen == 0 {
-//				rows.rs.done = true
-//
-//				switch err := rows.NextResultSet(); err {
-//				case nil, io.EOF:
-//					return rows, nil
-//				default:
-//					return nil, err
-//				}
-//			}
-//
-//			// Columns
-//			rows.rs.columns, err = bc.readColumns(resLen)
-//			return rows, err
-//		}
-//	}
-//	return nil, bc.markBadConn(err)
-//}
+func (bc *Conn) Query(query string, args []driver.Value) (driver.Rows, error) {
+	return bc.query(query, args)
+}
+
+func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
+	var (
+		req  	  *odbc.QueryRequest
+		respClient odbc.MDBService_QueryClient
+		err  error
+	)
+
+	if bc.IsClosed() {
+		errLog.Print(ErrInvalidConn)
+		return nil, driver.ErrBadConn
+	}
+
+	// Lock, check activeQuery flag, if not active, update, and unlock; set activeQuery to true.
+
+
+	if len(args) != 0 {
+		if !bc.cfg.InterpolateParams {
+			return nil, driver.ErrSkip
+		}
+
+		query, err = bc.interpolateParams(query, args)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	req = &odbc.QueryRequest{
+		Statement: query,
+	}
+
+	// Send command
+	respClient, err = bc.MDBServiceClient.Query(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+
+	// Store the stream in the connection object
+	bc.queryResponseStream = respClient
+
+	// Grab the first result set
+	resp, err = bc.queryResponseStream.Recv()
+	if err == io.EOF {
+		// No results exist. Close the stream and the query.
+	}
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			resp, err := respClient.Recv()
+			if err == io.EOF {
+				done <- true
+				return
+			}
+			if err != nil {
+				log.Printf("Cannont receive %v", err)
+			}
+
+		}
+	}()
+
+	<- done
+
+
+	err = bc.writeCommandPacketStr(comQuery, query)
+	if err == nil {
+		// Read Result
+		var resLen int
+		resLen, err = bc.readResultSetHeaderPacket()
+		if err == nil {
+			rows := new(textRows)
+			rows.bc = bc
+
+			if resLen == 0 {
+				rows.rs.done = true
+
+				switch err := rows.NextResultSet(); err {
+				case nil, io.EOF:
+					return rows, nil
+				default:
+					return nil, err
+				}
+			}
+
+			// Columns
+			rows.rs.columns, err = bc.readColumns(resLen)
+			return rows, err
+		}
+	}
+	return nil, bc.markBadConn(err)
+}
 
 func (db *Conn) interpolateParams(query string, args []driver.Value) (resp string, err error) {
 	// Number of ? should be same to len(args)
