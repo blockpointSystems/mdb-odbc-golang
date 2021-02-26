@@ -5,10 +5,18 @@ import (
 	"reflect"
 )
 
+type resultSet struct {
+	columnNames []string
+	columns     []driver.Value
+}
+
 // Rows is an iterator over an executed query's results.
 type Rows struct {
-
+	conn *Conn
+	set   resultSet
+	done  bool
 }
+
 // Columns returns the names of the columns. The number of
 // columns of the result is inferred from the length of the
 // slice. If a particular column name isn't known, an empty

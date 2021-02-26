@@ -214,6 +214,9 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 	var (
 		req  	  *odbc.QueryRequest
 		respClient odbc.MDBService_QueryClient
+
+		queryResp *odbc.QueryResponse
+
 		err  error
 	)
 
@@ -232,7 +235,7 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 
 		query, err = bc.interpolateParams(query, args)
 		if err != nil {
-			return nil, err
+			return nil, bc.markBadConn(err)
 		}
 	}
 
@@ -243,7 +246,7 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 	// Send command
 	respClient, err = bc.MDBServiceClient.Query(context.Background(), req)
 	if err != nil {
-		return nil, err
+		return nil, bc.markBadConn(err)
 	}
 
 
@@ -251,56 +254,40 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 	bc.queryResponseStream = respClient
 
 	// Grab the first result set
-	resp, err = bc.queryResponseStream.Recv()
+	queryResp, err = bc.queryResponseStream.Recv()
 	if err == io.EOF {
 		// No results exist. Close the stream and the query.
+		panic("eof")
 	}
 
-	done := make(chan bool)
+	// Deserialize the response and build the rows
+	var resp Rows
 
-	go func() {
-		for {
-			resp, err := respClient.Recv()
-			if err == io.EOF {
-				done <- true
-				return
-			}
-			if err != nil {
-				log.Printf("Cannont receive %v", err)
-			}
-
-		}
-	}()
-
-	<- done
-
-
-	err = bc.writeCommandPacketStr(comQuery, query)
-	if err == nil {
-		// Read Result
-		var resLen int
-		resLen, err = bc.readResultSetHeaderPacket()
-		if err == nil {
-			rows := new(textRows)
-			rows.bc = bc
-
-			if resLen == 0 {
-				rows.rs.done = true
-
-				switch err := rows.NextResultSet(); err {
-				case nil, io.EOF:
-					return rows, nil
-				default:
-					return nil, err
-				}
-			}
-
-			// Columns
-			rows.rs.columns, err = bc.readColumns(resLen)
-			return rows, err
-		}
+	resp.conn = bc
+	resp.set, err = buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet())
+	if err != nil {
+		panic(err)
 	}
+
+	resp.done = queryResp.GetDone()
+
+
+	if resp.done {
+		// Close the query req and return the rows
+	}
+
 	return nil, bc.markBadConn(err)
+}
+
+func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet, err error) {
+	rs = resultSet{
+		columnNames: make([]string, 	  len(schema.GetColumnName())),
+		columns:     make([]driver.Value, len(set)),
+	}
+
+
+
+	return
 }
 
 func (db *Conn) interpolateParams(query string, args []driver.Value) (resp string, err error) {
