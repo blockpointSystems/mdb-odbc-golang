@@ -2,6 +2,8 @@ package mdb
 
 import (
 	"database/sql/driver"
+	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
+	"io"
 	"reflect"
 )
 
@@ -12,9 +14,12 @@ type resultSet struct {
 
 // Rows is an iterator over an executed query's results.
 type Rows struct {
-	conn *Conn
-	set   resultSet
-	done  bool
+	streamRecv *odbc.MDBService_QueryClient
+
+	set     resultSet
+	nextSet *odbc.QueryResponse
+
+	done bool
 }
 
 // Columns returns the names of the columns. The number of
@@ -22,7 +27,10 @@ type Rows struct {
 // slice. If a particular column name isn't known, an empty
 // string should be returned for that entry.
 func (r *Rows) Columns() []string {
-	panic("implement me!")
+	if r != nil {
+		return r.set.columnNames
+	}
+	return []string{}
 }
 
 // Close closes the rows iterator.
@@ -51,7 +59,17 @@ func (r *Rows) Next(dest []driver.Value) error {
 // HasNextResultSet is called at the end of the current result set and
 // reports whether there is another result set after the current one.
 func (r *Rows) HasNextResultSet() bool {
-	panic("implement me!")
+	if r.nextSet != nil {
+		return true
+	}
+
+	nextResp, err := (*r.streamRecv).Recv()
+	if err != nil {
+		return false
+	}
+
+	r.nextSet = nextResp
+	return true
 }
 
 // NextResultSet advances the driver to the next result set even
@@ -59,7 +77,18 @@ func (r *Rows) HasNextResultSet() bool {
 //
 // NextResultSet should return io.EOF when there are no more result sets.
 func (r *Rows) NextResultSet() error {
-	panic("implement me!")
+	if r.HasNextResultSet() {
+		// Build the next result set
+		r.set  = buildResultSet(r.nextSet.GetRespSchema(), r.nextSet.GetResultSet())
+		r.done = r.nextSet.GetDone()
+
+		// Clear the nextSet queue as it has been bumped up
+		r.nextSet = nil
+
+		// Return nil
+		return nil
+	}
+	return io.EOF
 }
 
 // RowsColumnTypeScanType may be implemented by Rows. It should return

@@ -5,11 +5,11 @@ import (
 	"database/sql/driver"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
 	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
 	"io"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -30,7 +30,7 @@ type Conn struct {
 
 	// Query
 	activeQuery bool
-	queryResponseStream odbc.MDBService_QueryClient
+	queryResponseStream *odbc.MDBService_QueryClient
 }
 
 // Handles parameters set in DSN after the connection is established
@@ -210,11 +210,11 @@ func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
 	return
 }
 
-func (bc *Conn) Query(query string, args []driver.Value) (driver.Rows, error) {
-	return bc.query(query, args)
+func (db *Conn) Query(query string, args []driver.Value) (driver.Rows, error) {
+	return db.query(query, args)
 }
 
-func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
+func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	var (
 		req  	  *odbc.QueryRequest
 		respClient odbc.MDBService_QueryClient
@@ -224,7 +224,7 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 		err  error
 	)
 
-	if bc.IsClosed() {
+	if db.IsClosed() {
 		errLog.Print(ErrInvalidConn)
 		return nil, driver.ErrBadConn
 	}
@@ -233,13 +233,13 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 
 
 	if len(args) != 0 {
-		if !bc.cfg.InterpolateParams {
+		if !db.cfg.InterpolateParams {
 			return nil, driver.ErrSkip
 		}
 
-		query, err = bc.interpolateParams(query, args)
+		query, err = db.interpolateParams(query, args)
 		if err != nil {
-			return nil, bc.markBadConn(err)
+			return nil, db.markBadConn(err)
 		}
 	}
 
@@ -248,46 +248,47 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 	}
 
 	// Send command
-	respClient, err = bc.MDBServiceClient.Query(context.Background(), req)
+	respClient, err = db.MDBServiceClient.Query(context.Background(), req)
 	if err != nil {
-		return nil, bc.markBadConn(err)
+		return nil, db.markBadConn(err)
 	}
 
 
 	// Store the stream in the connection object
-	bc.queryResponseStream = respClient
+	//Now stored in the rows directly
+	db.queryResponseStream = &respClient
 
 	// Grab the first result set
-	queryResp, err = bc.queryResponseStream.Recv()
+	queryResp, err = respClient.Recv()
 	if err == io.EOF {
 		// No results exist. Close the stream and the query.
 		panic("eof")
 	}
 
 	// Deserialize the response and build the rows
-	var resp Rows
-
-	resp.conn = bc
-	resp.set, err = buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet())
-	if err != nil {
-		panic(err)
+	var resp = &Rows{
+		streamRecv: &respClient,
+		set:  buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet()),
+		done: queryResp.GetDone(),
 	}
-
-	resp.done = queryResp.GetDone()
-
-
 	if resp.done {
 		// Close the query req and return the rows
+		panic("done")
 	}
 
-	return nil, bc.markBadConn(err)
+	return resp, nil
 }
 
-func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet, err error) {
-	rs = resultSet{
-		columnNames: schema.GetColumnName(),
-		rows:        make([][]driver.Value, len(set)),
+func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet) {
+	if schema.GetTableName() == "" {
+		rs.columnNames = schema.GetColumnName()
+	} else {
+		rs.columnNames = make([]string, len(schema.GetColumnName()))
+		for i, colName := range schema.GetColumnName() {
+			rs.columnNames[i] = fmt.Sprintf("%s.%s", schema.GetTableName(), colName)
+		}
 	}
+	rs.rows = make([][]driver.Value, len(set))
 
 	for i, row := range set {
 		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
@@ -304,7 +305,7 @@ func convertColumnToValue(col []byte, datatype odbc.Datatype) driver.Value {
 	// TODO: Test the int / uint cases
 
 	if len(col) == 0 {
-		panic("column data empty")
+		panic("column data null")
 		return nil
 	}
 
