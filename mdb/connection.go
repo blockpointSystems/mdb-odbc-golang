@@ -288,16 +288,8 @@ func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet) {
 			rs.columnNames[i] = fmt.Sprintf("%s.%s", schema.GetTableName(), colName)
 		}
 	}
-	rs.rows = make([][]driver.Value, len(set))
 
-	for i, row := range set {
-		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
-		for j, col := range row.GetColumns() {
-			rs.rows[i][j] = convertColumnToValue(col, schema.GetColumnType()[j])
-		}
-	}
-
-
+	rs.buildNextResultSet(schema, set)
 	return
 }
 

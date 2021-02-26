@@ -16,10 +16,25 @@ type resultSet struct {
 type Rows struct {
 	streamRecv *odbc.MDBService_QueryClient
 
+	schema *odbc.Schema
+
 	set     resultSet
 	nextSet *odbc.QueryResponse
 
 	done bool
+}
+
+func (rs *resultSet) buildNextResultSet(schema *odbc.Schema, set []*odbc.Row) {
+	rs.rows = make([][]driver.Value, len(set))
+
+	for i, row := range set {
+		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
+		for j, col := range row.GetColumns() {
+			rs.rows[i][j] = convertColumnToValue(col, schema.GetColumnType()[j])
+		}
+	}
+
+	return
 }
 
 // Columns returns the names of the columns. The number of
@@ -79,7 +94,7 @@ func (r *Rows) HasNextResultSet() bool {
 func (r *Rows) NextResultSet() error {
 	if r.HasNextResultSet() {
 		// Build the next result set
-		r.set  = buildResultSet(r.nextSet.GetRespSchema(), r.nextSet.GetResultSet())
+		r.set.buildNextResultSet(r.nextSet.GetRespSchema(), r.nextSet.GetResultSet())
 		r.done = r.nextSet.GetDone()
 
 		// Clear the nextSet queue as it has been bumped up
@@ -96,7 +111,43 @@ func (r *Rows) NextResultSet() error {
 // column type "bigint" this should return "reflect.TypeOf(int64(0))".
 //type RowsColumnTypeScanType interface {}
 func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
-	panic("implement me!")
+	switch r.schema.GetColumnType()[index] {
+	case odbc.Datatype_BYTEARRAY:
+		return scanTypeRawBytes
+	case odbc.Datatype_STRING:
+		return scanTypeString
+	case odbc.Datatype_INT8:
+		return scanTypeInt8
+	case odbc.Datatype_UINT8:
+		return scanTypeUint8
+	case odbc.Datatype_INT16:
+		return scanTypeInt16
+	case odbc.Datatype_UINT16:
+		return scanTypeUint16
+	case odbc.Datatype_INT32:
+		return scanTypeInt32
+	case odbc.Datatype_UINT32:
+		return scanTypeUint32
+	case odbc.Datatype_INT64:
+		return scanTypeInt64
+	case odbc.Datatype_UINT64:
+		return scanTypeUint64
+	case odbc.Datatype_FLOAT32:
+		return scanTypeFloat32
+	case odbc.Datatype_FLOAT64:
+		return scanTypeFloat64
+	//case odbc.Datatype_COMPLEX64:
+	//	panic("not supported")
+	//case odbc.Datatype_COMPLEX128:
+	//	panic("not supported")
+	case odbc.Datatype_BOOL:
+		return scanTypeBoolean
+	case odbc.Datatype_TIMESTAMP:
+		return scanTypeNullTime
+	case odbc.Datatype_UUID:
+		return scanTypeString
+	}
+	panic("fix me!")
 }
 
 // RowsColumnTypeDatabaseTypeName may be implemented by Rows. It should return the
@@ -107,6 +158,42 @@ func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
 //type RowsColumnTypeDatabaseTypeName interface {}
 
 func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
+	switch r.schema.GetColumnType()[index] {
+	case odbc.Datatype_BYTEARRAY:
+		return "BYTEARRAY"
+	case odbc.Datatype_STRING:
+		return "STRING"
+	case odbc.Datatype_INT8:
+		return "INT8"
+	case odbc.Datatype_UINT8:
+		return "UINT8"
+	case odbc.Datatype_INT16:
+		return "INT16"
+	case odbc.Datatype_UINT16:
+		return "UINT16"
+	case odbc.Datatype_INT32:
+		return "INT32"
+	case odbc.Datatype_UINT32:
+		return "UINT32"
+	case odbc.Datatype_INT64:
+		return "INT64"
+	case odbc.Datatype_UINT64:
+		return "UINT64"
+	case odbc.Datatype_FLOAT32:
+		return "FLOAT32"
+	case odbc.Datatype_FLOAT64:
+		return "FLOAT64"
+	//case odbc.Datatype_COMPLEX64:
+	//	panic("not supported")
+	//case odbc.Datatype_COMPLEX128:
+	//	panic("not supported")
+	case odbc.Datatype_BOOL:
+		return "BOOL"
+	case odbc.Datatype_TIMESTAMP:
+		return "TIMESTAMP"
+	case odbc.Datatype_UUID:
+		return "UUID"
+	}
 	panic("implement me!")
 }
 
