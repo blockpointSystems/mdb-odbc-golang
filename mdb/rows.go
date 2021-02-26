@@ -7,7 +7,7 @@ import (
 
 type resultSet struct {
 	columnNames []string
-	columns     []driver.Value
+	rows        [][]driver.Value
 }
 
 // Rows is an iterator over an executed query's results.

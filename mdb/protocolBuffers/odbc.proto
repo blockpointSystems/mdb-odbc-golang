@@ -65,15 +65,15 @@ enum datatype {
 
     FLOAT32    = 10;
     FLOAT64    = 11;
-    COMPLEX64  = 12;
-    COMPLEX128 = 13;
+//    COMPLEX64  = 12;
+//    COMPLEX128 = 13;
 
-    UINTPTR = 14;
+//    UINTPTR = 14;
 
-    BOOL = 15;
+    BOOL = 12;
 
-    TIMESTAMP = 16;
-    UUID      = 17;
+    TIMESTAMP = 13;
+    UUID      = 14;
 }
 
 message row {

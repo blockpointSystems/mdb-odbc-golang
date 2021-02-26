@@ -3,10 +3,14 @@ package mdb
 import (
 	"context"
 	"database/sql/driver"
+	"encoding/binary"
 	"encoding/json"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/uuid"
 	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
 	"io"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -281,13 +285,77 @@ func (bc *Conn) query(query string, args []driver.Value) (*textRows, error) {
 
 func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet, err error) {
 	rs = resultSet{
-		columnNames: make([]string, 	  len(schema.GetColumnName())),
-		columns:     make([]driver.Value, len(set)),
+		columnNames: schema.GetColumnName(),
+		rows:        make([][]driver.Value, len(set)),
+	}
+
+	for i, row := range set {
+		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
+		for j, col := range row.GetColumns() {
+			rs.rows[i][j] = convertColumnToValue(col, schema.GetColumnType()[j])
+		}
 	}
 
 
-
 	return
+}
+
+func convertColumnToValue(col []byte, datatype odbc.Datatype) driver.Value {
+	// TODO: Test the int / uint cases
+
+	if len(col) == 0 {
+		panic("column data empty")
+		return nil
+	}
+
+	switch datatype {
+	case odbc.Datatype_BYTEARRAY:
+		return col
+	case odbc.Datatype_STRING:
+		return string(col)
+	case odbc.Datatype_INT8:
+		return int64(int8(col[0]))
+	case odbc.Datatype_UINT8:
+		return int64(col[0])
+	case odbc.Datatype_INT16:
+		return int64(int16(binary.LittleEndian.Uint16(col)))
+	case odbc.Datatype_UINT16:
+		return int64(binary.LittleEndian.Uint16(col))
+	case odbc.Datatype_INT32:
+		return int64(int32(binary.LittleEndian.Uint32(col)))
+	case odbc.Datatype_UINT32:
+		return int64(binary.LittleEndian.Uint32(col))
+	case odbc.Datatype_INT64:
+		return int64(binary.LittleEndian.Uint64(col))
+	case odbc.Datatype_UINT64:
+		return int64(binary.LittleEndian.Uint64(col))
+	case odbc.Datatype_FLOAT32:
+		bits := binary.LittleEndian.Uint32(col)
+		return float64(math.Float32frombits(bits))
+	case odbc.Datatype_FLOAT64:
+		bits := binary.LittleEndian.Uint64(col)
+		return math.Float64frombits(bits)
+	//case odbc.Datatype_COMPLEX64:
+	//	panic("not supported")
+	//case odbc.Datatype_COMPLEX128:
+	//	panic("not supported")
+	case odbc.Datatype_BOOL:
+		return bool(int8(col[0]) == 1)
+	case odbc.Datatype_TIMESTAMP:
+		if len(col) != 12 {
+			panic("incorrect length")
+		}
+
+		tmp := &timestamp.Timestamp{
+			Seconds: int64(binary.LittleEndian.Uint64(col[0:8])),
+			Nanos:   int32(binary.LittleEndian.Uint32(col[8:])),
+		}
+		return tmp.AsTime()
+	case odbc.Datatype_UUID:
+		uuid, _ := uuid.FromBytes(col)
+		return uuid.String()
+	}
+	return nil
 }
 
 func (db *Conn) interpolateParams(query string, args []driver.Value) (resp string, err error) {
