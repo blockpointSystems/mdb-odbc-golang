@@ -4,8 +4,8 @@ import "database/sql/driver"
 
 func (db *Conn) IsClosed() bool {
 	if db != nil {
-
-		return
+		panic("Implement me!")
+		//return
 	}
 	return false
 }

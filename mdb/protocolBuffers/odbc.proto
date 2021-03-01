@@ -11,37 +11,58 @@ option go_package = "gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/od
 
 message DummyRequest {}
 
+
+message InitializationRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message authPacket {
+    uint64 user_id = 1;
+    string j_w_t   = 2;
+}
+
 message XactRequest {
-    int32 isolation_level = 1;
-    bool  read_only       = 2;
-//    bool  atomic          = 3;
+    authPacket auth = 1;
+
+    int32 isolation_level = 2;
+    bool  read_only       = 3;
 }
 
 message XactResponse {
-    uint64 xact_id = 1;
+    authPacket auth = 1;
+
+    uint64 xact_id  = 2;
 //    bool   success = 2;
 }
 
 message ExecRequest {
-    string statement = 1;
+    authPacket auth  = 1;
+    string statement = 2;
 }
 
 message ExecResponse {
-    string response      = 1;
-    int64  insert_id     = 2;
-    int64  affected_rows = 3;
+    authPacket auth = 1;
+
+    string response      = 2;
+    int64  insert_id     = 3;
+    int64  affected_rows = 4;
 }
 
 
 message QueryRequest {
-    string statement = 1;
+    authPacket auth  = 1;
+    string statement = 2;
 }
 
 message QueryResponse {
-    int32    resp_length    = 1;
-    schema   resp_schema    = 2;
-    repeated row result_set = 3;
-    bool     done           = 4;
+    authPacket auth  = 1;
+
+    int32    resp_length    = 2;
+    schema   resp_schema    = 3;
+    repeated row result_set = 4;
+
+    bool     done           = 5;
 }
 
 message schema {
@@ -78,6 +99,7 @@ enum datatype {
 
 message row {
     repeated bytes columns = 1;
+    // Null flag? bitmap?
 }
 
 
@@ -95,6 +117,7 @@ service MDBService {
     ////////////////////////////////////////////////////////////////////////////////
 
     // Register new connection
+    rpc InitializeConnection(InitializationRequest) returns (authPacket) {};
 
 
     //    Transactions    //

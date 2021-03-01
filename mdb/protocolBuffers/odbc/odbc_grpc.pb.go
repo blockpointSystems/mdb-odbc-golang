@@ -18,6 +18,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MDBServiceClient interface {
+	// Register new connection
+	InitializeConnection(ctx context.Context, in *InitializationRequest, opts ...grpc.CallOption) (*AuthPacket, error)
 	// Begin: Start Transaction
 	Begin(ctx context.Context, in *XactRequest, opts ...grpc.CallOption) (*XactResponse, error)
 	// Close: Close session and all active transactions
@@ -35,6 +37,15 @@ type mDBServiceClient struct {
 
 func NewMDBServiceClient(cc grpc.ClientConnInterface) MDBServiceClient {
 	return &mDBServiceClient{cc}
+}
+
+func (c *mDBServiceClient) InitializeConnection(ctx context.Context, in *InitializationRequest, opts ...grpc.CallOption) (*AuthPacket, error) {
+	out := new(AuthPacket)
+	err := c.cc.Invoke(ctx, "/bsql.MDBService/InitializeConnection", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *mDBServiceClient) Begin(ctx context.Context, in *XactRequest, opts ...grpc.CallOption) (*XactResponse, error) {
@@ -134,6 +145,8 @@ func (x *mDBServiceLoadClient) CloseAndRecv() (*LoadResponse, error) {
 // All implementations must embed UnimplementedMDBServiceServer
 // for forward compatibility
 type MDBServiceServer interface {
+	// Register new connection
+	InitializeConnection(context.Context, *InitializationRequest) (*AuthPacket, error)
 	// Begin: Start Transaction
 	Begin(context.Context, *XactRequest) (*XactResponse, error)
 	// Close: Close session and all active transactions
@@ -150,6 +163,9 @@ type MDBServiceServer interface {
 type UnimplementedMDBServiceServer struct {
 }
 
+func (UnimplementedMDBServiceServer) InitializeConnection(context.Context, *InitializationRequest) (*AuthPacket, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InitializeConnection not implemented")
+}
 func (UnimplementedMDBServiceServer) Begin(context.Context, *XactRequest) (*XactResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Begin not implemented")
 }
@@ -176,6 +192,24 @@ type UnsafeMDBServiceServer interface {
 
 func RegisterMDBServiceServer(s grpc.ServiceRegistrar, srv MDBServiceServer) {
 	s.RegisterService(&MDBService_ServiceDesc, srv)
+}
+
+func _MDBService_InitializeConnection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InitializationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MDBServiceServer).InitializeConnection(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/bsql.MDBService/InitializeConnection",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MDBServiceServer).InitializeConnection(ctx, req.(*InitializationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _MDBService_Begin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -286,6 +320,10 @@ var MDBService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bsql.MDBService",
 	HandlerType: (*MDBServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "InitializeConnection",
+			Handler:    _MDBService_InitializeConnection_Handler,
+		},
 		{
 			MethodName: "Begin",
 			Handler:    _MDBService_Begin_Handler,
