@@ -152,9 +152,6 @@ func (db *Conn) begin(ctx context.Context, xactOpts driver.TxOptions) (xact driv
 // and then close the statement.
 //
 // Exec may return ErrSkip.
-//
-// Deprecated: Drivers should implement ExecerContext instead.
-//type Execer interface {}
 func (db *Conn) Exec(query string, args []driver.Value) (driver.Result, error) {
 	var (
 		result Result

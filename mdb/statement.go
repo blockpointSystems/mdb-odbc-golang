@@ -5,15 +5,26 @@ import "database/sql/driver"
 // Stmt is a prepared statement. It is bound to a Conn and not
 // used by multiple goroutines concurrently.
 type Stmt struct {
+	conn *Conn
 
+	stmt 	   string
+	paramCount int
 }
 
 // Close closes the statement.
 //
 // As of Go 1.1, a Stmt will not be closed if it's in use
 // by any queries.
-func (s *Stmt) Close() error {
-	panic("implement me!")
+func (s *Stmt) Close() (err error) {
+	if s.conn == nil || s.conn.IsClosed() {
+		// driver.Stmt.Close can be called more than once, thus this function
+		// has to be idempotent.
+		return driver.ErrBadConn
+	}
+
+	err = s.conn.Close()
+	s.conn = nil
+	return err
 }
 
 // NumInput returns the number of placeholder parameters.
@@ -26,7 +37,7 @@ func (s *Stmt) Close() error {
 // its number of placeholders. In that case, the sql package
 // will not sanity check Exec or Query argument counts.
 func (s *Stmt) NumInput() int {
-	panic("implement me!")
+	return s.paramCount
 }
 
 // Exec executes a query that doesn't return rows, such
@@ -34,7 +45,7 @@ func (s *Stmt) NumInput() int {
 //
 // Deprecated: Drivers should implement StmtExecContext instead (or additionally).
 func (s *Stmt) Exec(args []driver.Value) (driver.Result, error) {
-	panic("implement me!")
+	return s.conn.Exec(s.stmt, args)
 }
 
 // Query executes a query that may return rows, such as a
@@ -42,5 +53,5 @@ func (s *Stmt) Exec(args []driver.Value) (driver.Result, error) {
 //
 // Deprecated: Drivers should implement StmtQueryContext instead (or additionally).
 func (s *Stmt) Query(args []driver.Value) (driver.Rows, error) {
-	panic("implement me!")
+	return s.conn.Query(s.stmt, args)
 }
