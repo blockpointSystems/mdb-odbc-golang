@@ -69,6 +69,8 @@ message schema {
     string            table_name    = 1;
     repeated string   column_name   = 2;
     repeated datatype column_type   = 3;
+    repeated int64    column_size   = 4;
+    bytes column_is_nullable_bitmap = 5;
 }
 
 enum datatype {
@@ -98,7 +100,8 @@ enum datatype {
 }
 
 message row {
-    repeated bytes columns = 1;
+    repeated bytes columns   = 1;
+    bytes null_column_bitmap = 2;
     // Null flag? bitmap?
 }
 

@@ -5,6 +5,7 @@ import (
 	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
 	"io"
 	"reflect"
+	"sync/atomic"
 )
 
 type resultSet struct {
@@ -21,20 +22,9 @@ type Rows struct {
 	set     resultSet
 	nextSet *odbc.QueryResponse
 
+	setPos int32
+
 	done bool
-}
-
-func (rs *resultSet) buildNextResultSet(schema *odbc.Schema, set []*odbc.Row) {
-	rs.rows = make([][]driver.Value, len(set))
-
-	for i, row := range set {
-		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
-		for j, col := range row.GetColumns() {
-			rs.rows[i][j] = convertColumnToValue(col, schema.GetColumnType()[j])
-		}
-	}
-
-	return
 }
 
 // Columns returns the names of the columns. The number of
@@ -50,7 +40,15 @@ func (r *Rows) Columns() []string {
 
 // Close closes the rows iterator.
 func (r *Rows) Close() error {
-	panic("implement me!")
+	(*r.streamRecv).CloseSend()
+
+	r.schema   = nil
+
+	r.set.columnNames = nil
+	r.set.rows 		  = nil
+
+	r.nextSet = nil
+	return nil
 }
 
 // Next is called to populate the next row of data into
@@ -62,8 +60,19 @@ func (r *Rows) Close() error {
 // The dest should not be written to outside of Next. Care
 // should be taken when closing Rows not to modify
 // a buffer held in dest.
-func (r *Rows) Next(dest []driver.Value) error {
-	panic("implement me!")
+func (r *Rows) Next(dest []driver.Value) (err error) {
+	pos := atomic.AddInt32(&r.setPos, 1) - 1
+	if int(pos) < len(r.schema.GetColumnName()) {
+		copy(dest, r.set.rows[pos])
+		return
+	}
+
+	err = r.NextResultSet()
+	if err != nil {
+		return
+	}
+
+	return r.Next(dest)
 }
 
 
@@ -98,6 +107,7 @@ func (r *Rows) NextResultSet() error {
 		r.done = r.nextSet.GetDone()
 
 		// Clear the nextSet queue as it has been bumped up
+		atomic.StoreInt32(&r.setPos, 0)
 		r.nextSet = nil
 
 		// Return nil
@@ -109,7 +119,6 @@ func (r *Rows) NextResultSet() error {
 // RowsColumnTypeScanType may be implemented by Rows. It should return
 // the value type that can be used to scan types into. For example, the database
 // column type "bigint" this should return "reflect.TypeOf(int64(0))".
-//type RowsColumnTypeScanType interface {}
 func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
 	switch r.schema.GetColumnType()[index] {
 	case odbc.Datatype_BYTEARRAY:
@@ -147,16 +156,11 @@ func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
 	case odbc.Datatype_UUID:
 		return scanTypeString
 	}
-	panic("fix me!")
+	return nil
 }
 
 // RowsColumnTypeDatabaseTypeName may be implemented by Rows. It should return the
 // database system type name without the length. Type names should be uppercase.
-// Examples of returned types: "VARCHAR", "NVARCHAR", "VARCHAR2", "CHAR", "TEXT",
-// "DECIMAL", "SMALLINT", "INT", "BIGINT", "BOOL", "[]BIGINT", "JSONB", "XML",
-// "TIMESTAMP".
-//type RowsColumnTypeDatabaseTypeName interface {}
-
 func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
 	switch r.schema.GetColumnType()[index] {
 	case odbc.Datatype_BYTEARRAY:
@@ -194,7 +198,7 @@ func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
 	case odbc.Datatype_UUID:
 		return "UUID"
 	}
-	panic("implement me!")
+	return "UNDEF"
 }
 
 // RowsColumnTypeLength may be implemented by Rows. It should return the length
@@ -208,20 +212,29 @@ func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
 //   decimal       (0, false)
 //   int           (0, false)
 //   bytea(30)     (30, true)
-//type RowsColumnTypeLength interface {}
-
 func (r *Rows) ColumnTypeLength(index int) (length int64, ok bool) {
-	panic("implement me!")
+	length = r.schema.GetColumnSize()[index]
+	switch r.schema.GetColumnType()[index] {
+	case odbc.Datatype_BYTEARRAY, odbc.Datatype_STRING:
+		ok = true
+	}
+	return
 }
 
 // RowsColumnTypeNullable may be implemented by Rows. The nullable value should
 // be true if it is known the column may be null, or false if the column is known
 // to be not nullable.
 // If the column nullability is unknown, ok should be false.
-//type RowsColumnTypeNullable interface {}
-
 func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
-	panic("implement me!")
+	if r != nil {
+		bit, err := GetBitFromBytes(r.schema.GetColumnIsNullableBitmap(), index)
+		if err != nil {
+			return
+		}
+		nullable = bit == ONE
+		ok = true
+	}
+	return
 }
 
 // RowsColumnTypePrecisionScale may be implemented by Rows. It should return
@@ -230,8 +243,30 @@ func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
 //   decimal(38, 4)    (38, 4, true)
 //   int               (0, 0, false)
 //   decimal           (math.MaxInt64, math.MaxInt64, true)
-//type RowsColumnTypePrecisionScale interface {}
-
 func (r *Rows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
 	panic("implement me!")
+	switch r.schema.GetColumnType()[index] {
+	case odbc.Datatype_FLOAT32:
+		precision = 11
+		scale     = 2
+		ok		  = true
+	case odbc.Datatype_FLOAT64:
+		precision = 11
+		scale     = 2
+		ok		  = true
+	}
+	return
+}
+
+func (rs *resultSet) buildNextResultSet(schema *odbc.Schema, set []*odbc.Row) {
+	rs.rows = make([][]driver.Value, len(set))
+
+	for i, row := range set {
+		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
+		for j, col := range row.GetColumns() {
+			rs.rows[i][j] = convertColumnToValue(col, schema.GetColumnType()[j])
+		}
+	}
+
+	return
 }
