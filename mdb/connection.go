@@ -22,20 +22,38 @@ import (
 // Conn is assumed to be stateful.
 type Conn struct {
 	// Managerial
-	cfg   *Config
+	cfg    *Config
 	status statusFlag
+
+	// TODO: Make atomic
+	closed bool
 
 	// Operational
 	odbc.MDBServiceClient
+	auth *odbc.AuthPacket
 
 	// Query
-	activeQuery bool
+	activeQuery         bool
 	queryResponseStream *odbc.MDBService_QueryClient
 }
 
 // Handles parameters set in DSN after the connection is established
 func (db *Conn) configureConnection() (err error) {
 	// Nothing to really do here, only the basic charset is allowed
+
+	var (
+		initReq  = &odbc.InitializationRequest{
+			Username: db.cfg.User,
+			Password: db.cfg.Password,
+			DbName:   db.cfg.DBName,
+		}
+	)
+
+	db.auth, err = db.MDBServiceClient.InitializeConnection(
+		context.Background(),
+		initReq,
+	)
+
 
 	//var cmdSet strings.Builder
 	//for param, val := range db.cfg.Params {
@@ -81,7 +99,11 @@ func (db *Conn) configureConnection() (err error) {
 
 // Prepare returns a prepared statement, bound to this connection.
 func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
-	panic("implement me")
+	s = &Stmt{
+		conn:       db,
+		stmt:       query,
+		paramCount: strings.Count(query, "?"),
+	}
 	return
 }
 
@@ -94,7 +116,10 @@ func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 // idle connections, it shouldn't be necessary for drivers to
 // do their own connection caching.
 func (db *Conn)	Close() (err error) {
-	panic("implement me")
+	if !db.IsClosed() {
+		db.SetClosed()
+		_, err = db.MDBServiceClient.Close(context.Background(), &odbc.DummyRequest{})
+	}
 	return
 }
 
@@ -187,6 +212,7 @@ func (db *Conn) Exec(query string, args []driver.Value) (driver.Result, error) {
 func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
 	var (
 		req = &odbc.ExecRequest{
+			Auth: 	   db.auth,
 			Statement: query,
 		}
 
@@ -227,6 +253,12 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	}
 
 	// Lock, check activeQuery flag, if not active, update, and unlock; set activeQuery to true.
+	// FIXME: Make atomic
+	if db.activeQuery {
+		panic("query active")
+		//return
+	}
+	db.activeQuery = true
 
 
 	if len(args) != 0 {
@@ -241,6 +273,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	}
 
 	req = &odbc.QueryRequest{
+		Auth: 	   db.auth,
 		Statement: query,
 	}
 
@@ -270,7 +303,21 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	}
 	if resp.done {
 		// Close the query req and return the rows
-		panic("done")
+		respClient.CloseSend()
+
+		// FIXME: Update this
+		db.activeQuery = false
+		return resp, nil
+	}
+
+	resp.close = func() error {
+		if !db.activeQuery {
+			// FIXME: return error
+			panic("query inactive, but hasn't been closed")
+		}
+
+		db.activeQuery = false
+		return (*db.queryResponseStream).CloseSend()
 	}
 
 	return resp, nil

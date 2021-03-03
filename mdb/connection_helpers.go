@@ -4,10 +4,15 @@ import "database/sql/driver"
 
 func (db *Conn) IsClosed() bool {
 	if db != nil {
-		panic("Implement me!")
-		//return
+		//panic("Implement me!")
+		return db.closed
 	}
-	return false
+	return true
+}
+
+func (db *Conn) SetClosed() {
+	// TODO: Make atomic
+	db.closed = true
 }
 
 func (db *Conn) markBadConn(err error) error {

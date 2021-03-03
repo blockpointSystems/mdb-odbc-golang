@@ -8,17 +8,18 @@ package bsql;
 option go_package = "gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc";
 
 
-
 message DummyRequest {}
 
 
 message InitializationRequest {
     string username = 1;
     string password = 2;
+
+    string db_name = 3;
 }
 
 message authPacket {
-    uint64 user_id = 1;
+    uint64 login_id = 1;
     string j_w_t   = 2;
 }
 
@@ -74,29 +75,32 @@ message schema {
 }
 
 enum datatype {
-    BYTEARRAY = 0;
-    STRING    = 1;
+    UNDEF = 0;
+    NULL  = 1;
 
-    INT8   = 2;
-    UINT8  = 3;
-    INT16  = 4;
-    UINT16 = 5;
-    INT32  = 6;
-    UINT32 = 7;
-    INT64  = 8;
-    UINT64 = 9;
+    BYTEARRAY = 2;
+    STRING    = 3;
 
-    FLOAT32    = 10;
-    FLOAT64    = 11;
+    INT8   = 4;
+    UINT8  = 5;
+    INT16  = 6;
+    UINT16 = 7;
+    INT32  = 8;
+    UINT32 = 9;
+    INT64  = 10;
+    UINT64 = 11;
+
+    FLOAT32    = 12;
+    FLOAT64    = 13;
 //    COMPLEX64  = 12;
 //    COMPLEX128 = 13;
-
+//
 //    UINTPTR = 14;
 
-    BOOL = 12;
+    BOOL = 14;
 
-    TIMESTAMP = 13;
-    UUID      = 14;
+    TIMESTAMP = 15;
+    UUID      = 16;
 }
 
 message row {

@@ -24,7 +24,8 @@ type Rows struct {
 
 	setPos int32
 
-	done bool
+	close func() error
+	done  bool
 }
 
 // Columns returns the names of the columns. The number of
@@ -40,15 +41,16 @@ func (r *Rows) Columns() []string {
 
 // Close closes the rows iterator.
 func (r *Rows) Close() error {
-	(*r.streamRecv).CloseSend()
-
+	if !r.done {
+		panic("not done")
+	}
 	r.schema   = nil
 
 	r.set.columnNames = nil
 	r.set.rows 		  = nil
 
 	r.nextSet = nil
-	return nil
+	return r.close()
 }
 
 // Next is called to populate the next row of data into
@@ -62,7 +64,7 @@ func (r *Rows) Close() error {
 // a buffer held in dest.
 func (r *Rows) Next(dest []driver.Value) (err error) {
 	pos := atomic.AddInt32(&r.setPos, 1) - 1
-	if int(pos) < len(r.schema.GetColumnName()) {
+	if int(pos) < len(r.set.rows) {
 		copy(dest, r.set.rows[pos])
 		return
 	}

@@ -19,7 +19,7 @@ func (c *connector) Connect(ctx context.Context) (conn driver.Conn, err error) {
 		grpcConn *grpc.ClientConn
 	)
 
-	grpcConn, err = grpc.Dial(c.cfg.Addr)
+	grpcConn, err = grpc.Dial(c.cfg.Addr, grpc.WithInsecure())
 	if err != nil {
 		return
 	}
