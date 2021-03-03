@@ -118,7 +118,7 @@ func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 func (db *Conn)	Close() (err error) {
 	if !db.IsClosed() {
 		db.SetClosed()
-		_, err = db.MDBServiceClient.Close(context.Background(), &odbc.DummyRequest{})
+		_, err = db.MDBServiceClient.Close(context.Background(), db.auth)
 	}
 	return
 }
@@ -301,14 +301,15 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 		set:  buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet()),
 		done: queryResp.GetDone(),
 	}
-	if resp.done {
-		// Close the query req and return the rows
-		respClient.CloseSend()
-
-		// FIXME: Update this
-		db.activeQuery = false
-		return resp, nil
-	}
+	//if resp.done {
+	//	// Close the query req and return the rows
+	//	respClient.CloseSend()
+	//
+	//	// FIXME: Update this
+	//	db.activeQuery = false
+	//	resp.close = func() error { return nil }
+	//	return resp, nil
+	//}
 
 	resp.close = func() error {
 		if !db.activeQuery {

@@ -132,7 +132,7 @@ service MDBService {
     // Begin: Start Transaction
     rpc Begin(XactRequest)  returns (XactResponse) {};
     // Close: Close session and all active transactions
-    rpc Close(DummyRequest) returns (CloseResponse) {};
+    rpc Close(authPacket) returns (CloseResponse) {};
 
 
     //    Commands    //

@@ -2,6 +2,7 @@ package mdb
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"log"
 	"testing"
@@ -50,7 +51,7 @@ func TestBasicDriverUsage(t *testing.T) {
 		err = rows.Next(respRow)
 	}
 
-
+	conn.Close()
 
 	//tx, err = conn.Begin()
 	//
@@ -60,4 +61,45 @@ func TestBasicDriverUsage(t *testing.T) {
 
 
 	//sql.
+}
+
+func TestBasicSQLImplementation(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+
+		rows *sql.Rows
+
+		user struct{
+			id 		  uint64 `db:"id"`
+			firstName string
+			lastName  string
+			age 	  uint8
+			username  string
+		}
+		//resp interface{}
+	)
+	//sql.Register("mdb", &MDBDriver{})
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/main")
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT id, first_name, last_name, age, username FROM user")
+	checkErr(t, mdb, err)
+
+	for rows.Next() {
+		err = rows.Scan(&user.id, &user.firstName, &user.lastName, &user.age, &user.username)
+		checkErr(t, mdb, err)
+
+		log.Printf("USER: %v\n", user)
+	}
+
+	//for
+}
+
+func checkErr(t *testing.T, mdb *sql.DB, err error) {
+	if err != nil {
+		mdb.Close()
+		t.Error(err)
+		panic("")
+	}
 }

@@ -23,7 +23,7 @@ type MDBServiceClient interface {
 	// Begin: Start Transaction
 	Begin(ctx context.Context, in *XactRequest, opts ...grpc.CallOption) (*XactResponse, error)
 	// Close: Close session and all active transactions
-	Close(ctx context.Context, in *DummyRequest, opts ...grpc.CallOption) (*CloseResponse, error)
+	Close(ctx context.Context, in *AuthPacket, opts ...grpc.CallOption) (*CloseResponse, error)
 	// Exec:  Execute a statement / command
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
 	// Query: Query the database for information
@@ -57,7 +57,7 @@ func (c *mDBServiceClient) Begin(ctx context.Context, in *XactRequest, opts ...g
 	return out, nil
 }
 
-func (c *mDBServiceClient) Close(ctx context.Context, in *DummyRequest, opts ...grpc.CallOption) (*CloseResponse, error) {
+func (c *mDBServiceClient) Close(ctx context.Context, in *AuthPacket, opts ...grpc.CallOption) (*CloseResponse, error) {
 	out := new(CloseResponse)
 	err := c.cc.Invoke(ctx, "/bsql.MDBService/Close", in, out, opts...)
 	if err != nil {
@@ -150,7 +150,7 @@ type MDBServiceServer interface {
 	// Begin: Start Transaction
 	Begin(context.Context, *XactRequest) (*XactResponse, error)
 	// Close: Close session and all active transactions
-	Close(context.Context, *DummyRequest) (*CloseResponse, error)
+	Close(context.Context, *AuthPacket) (*CloseResponse, error)
 	// Exec:  Execute a statement / command
 	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
 	// Query: Query the database for information
@@ -169,7 +169,7 @@ func (UnimplementedMDBServiceServer) InitializeConnection(context.Context, *Init
 func (UnimplementedMDBServiceServer) Begin(context.Context, *XactRequest) (*XactResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Begin not implemented")
 }
-func (UnimplementedMDBServiceServer) Close(context.Context, *DummyRequest) (*CloseResponse, error) {
+func (UnimplementedMDBServiceServer) Close(context.Context, *AuthPacket) (*CloseResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Close not implemented")
 }
 func (UnimplementedMDBServiceServer) Exec(context.Context, *ExecRequest) (*ExecResponse, error) {
@@ -231,7 +231,7 @@ func _MDBService_Begin_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _MDBService_Close_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DummyRequest)
+	in := new(AuthPacket)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func _MDBService_Close_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: "/bsql.MDBService/Close",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MDBServiceServer).Close(ctx, req.(*DummyRequest))
+		return srv.(MDBServiceServer).Close(ctx, req.(*AuthPacket))
 	}
 	return interceptor(ctx, in, info, handler)
 }
