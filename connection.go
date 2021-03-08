@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
-	"gitlab.com/blockpoint/utilities/odbc/mdb/protocolBuffers/odbc"
+	"gitlab.com/blockpoint/utilities/odbc/protocolBuffers/odbc"
 	"io"
 	"math"
 	"strconv"
