@@ -1,4 +1,4 @@
-module gitlab.com/blockpoint/utilities/odbc
+module gitlab.com/blockpoint/utilities/odbc/golang
 
 go 1.16
 
