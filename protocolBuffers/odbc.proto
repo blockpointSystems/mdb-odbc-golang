@@ -5,7 +5,7 @@ package bsql;
 //import "google/protobuf/timestamp.proto";
 
 // bsqlpb is the golang package that will be used to communicate and cary out transactions with the database
-option go_package = "gitlab.com/blockpoint/utilities/odbc/golang/protocolBuffers/odbc";
+option go_package = "gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc";
 
 
 message DummyRequest {}
