@@ -464,13 +464,17 @@ func (db *Conn) interpolateParams(query string, args []driver.Value) (resp strin
 			if v == nil {
 				buf = append(buf, "NULL"...)
 			} else {
-				buf = append(buf, "_binary'"...)
-				if db.status&statusNoBackslashEscapes == 0 {
-					buf = escapeBytesBackslash(buf, v)
-				} else {
-					buf = escapeBytesQuotes(buf, v)
-				}
-				buf = append(buf, '\'')
+				//buf = append(buf, "_binary'"...)
+				//if db.status&statusNoBackslashEscapes == 0 {
+				//	buf = escapeBytesBackslash(buf, v)
+				//} else {
+				//	buf = escapeBytesQuotes(buf, v)
+				//}
+				//buf = append(buf, '\'')
+				buf = append(
+					buf,
+					fmt.Sprintf("%d", v)...,
+				)
 			}
 		case string:
 			buf = append(buf, '"')

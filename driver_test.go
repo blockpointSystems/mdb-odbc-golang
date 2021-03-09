@@ -80,7 +80,7 @@ func TestBasicSQLImplementation(t *testing.T) {
 		//resp interface{}
 	)
 	//sql.Register("mdb", &MDBDriver{})
-	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/main")
+	mdb, err = sql.Open("mdb", "g")
 	checkErr(t, mdb, err)
 
 	rows, err = mdb.Query("SELECT id, first_name, last_name, age, username FROM user")
