@@ -83,6 +83,7 @@ func TestBasicSQLImplementation(t *testing.T) {
 	rows, err = mdb.Query("SELECT * FROM sys_sessions")
 	checkErr(t, mdb, err)
 
+
 	for rows.Next() {
 		err = rows.Scan(
 			&command.id,
@@ -197,6 +198,12 @@ func TestBasicBegin(t *testing.T) {
 	xact, err = mdb.Begin()
 	checkErr(t, mdb, err)
 
+	rows, err = mdb.Query("SELECT * FROM user")
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT * FROM user")
+	checkErr(t, mdb, err)
+
 	// This should work fine.
 	_, err = xact.Exec("INSERT user (first_name, last_name, age, username) VALUES (\"it's CHABOY\", \"Smith\", 45, \"CHABOY\")")
 	checkErr(t, mdb, err)
@@ -213,6 +220,9 @@ func TestBasicBegin(t *testing.T) {
 
 	// This should work fine.
 	_, err = xact.Exec("INSERT user (first_name, last_name, age, username) VALUES (\"it's NOT CHABOY\", \"Smith\", 45, \"NOT CHABOY\")")
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT * FROM user")
 	checkErr(t, mdb, err)
 
 	// Commit the transaction.

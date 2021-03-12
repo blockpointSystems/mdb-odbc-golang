@@ -40,11 +40,17 @@ type Conn struct {
 func (db *Conn) configureConnection() (err error) {
 	// Nothing to really do here, only the basic charset is allowed
 
+	// Resolve the auth packet
+	if db.auth == nil {
+		db.auth = new(odbc.AuthPacket)
+	}
+
 	var (
 		initReq  = &odbc.InitializationRequest{
 			Username: db.cfg.User,
 			Password: db.cfg.Password,
 			DbName:   db.cfg.DBName,
+			Auth: 	  db.auth,
 		}
 	)
 
