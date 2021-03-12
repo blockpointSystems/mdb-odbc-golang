@@ -14,8 +14,9 @@ message DummyRequest {}
 message InitializationRequest {
     string username = 1;
     string password = 2;
+    string db_name  = 3;
 
-    string db_name = 3;
+    authPacket auth = 4;
 }
 
 message authPacket {
