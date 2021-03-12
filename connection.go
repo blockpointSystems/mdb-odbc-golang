@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
 	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc"
 	"io"
@@ -156,6 +155,7 @@ func (db *Conn) begin(ctx context.Context, xactOpts driver.TxOptions) (xact driv
 		req = &odbc.XactRequest{
 			IsolationLevel: int32(xactOpts.Isolation),
 			ReadOnly:       xactOpts.ReadOnly,
+			Auth: db.auth,
 		}
 		resp *odbc.XactResponse
 	)
@@ -373,22 +373,10 @@ func convertColumnToValue(col []byte, datatype odbc.Datatype) driver.Value {
 	case odbc.Datatype_FLOAT64:
 		bits := binary.LittleEndian.Uint64(col)
 		return math.Float64frombits(bits)
-	//case odbc.Datatype_COMPLEX64:
-	//	panic("not supported")
-	//case odbc.Datatype_COMPLEX128:
-	//	panic("not supported")
 	case odbc.Datatype_BOOL:
 		return bool(int8(col[0]) == 1)
 	case odbc.Datatype_TIMESTAMP:
-		if len(col) != 12 {
-			panic("incorrect length")
-		}
-
-		tmp := &timestamp.Timestamp{
-			Seconds: int64(binary.LittleEndian.Uint64(col[0:8])),
-			Nanos:   int32(binary.LittleEndian.Uint32(col[8:])),
-		}
-		return tmp.AsTime()
+		return time.Unix(0, int64(binary.LittleEndian.Uint64(col[0:8])))
 	case odbc.Datatype_UUID:
 		uuid, _ := uuid.FromBytes(col)
 		return uuid.String()
