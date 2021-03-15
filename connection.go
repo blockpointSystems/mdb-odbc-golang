@@ -347,10 +347,10 @@ func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet) {
 func convertColumnToValue(col []byte, datatype odbc.Datatype) driver.Value {
 	// TODO: Test the int / uint cases
 
-	if len(col) == 0 {
-		panic("column data null")
-		return nil
-	}
+	//if len(col) == 0 {
+	//	//panic("column data null")
+	//	return nil
+	//}
 
 	switch datatype {
 	case odbc.Datatype_BYTEARRAY:

@@ -228,6 +228,7 @@ func (r *Rows) ColumnTypeLength(index int) (length int64, ok bool) {
 // to be not nullable.
 // If the column nullability is unknown, ok should be false.
 func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
+	panic("implement me!")
 	if r != nil {
 		bit, err := GetBitFromBytes(r.schema.GetColumnIsNullableBitmap(), index)
 		if err != nil {
@@ -266,6 +267,14 @@ func (rs *resultSet) buildNextResultSet(schema *odbc.Schema, set []*odbc.Row) {
 	for i, row := range set {
 		rs.rows[i] = make([]driver.Value, len(rs.columnNames))
 		for j, col := range row.GetColumns() {
+
+			bit, _ := GetBitFromBytes(row.GetNullColumnBitmap(), j)
+
+			if bit == ONE {
+				// Column is null
+				continue
+			}
+			// Column is not null
 			rs.rows[i][j] = convertColumnToValue(col, schema.GetColumnType()[j])
 		}
 	}
