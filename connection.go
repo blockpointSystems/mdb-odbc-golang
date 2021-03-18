@@ -124,6 +124,7 @@ func (db *Conn)	Close() (err error) {
 	if !db.IsClosed() {
 		db.SetClosed()
 		_, err = db.MDBServiceClient.Close(context.Background(), db.auth)
+		db.MDBServiceClient = nil
 	}
 	return
 }
@@ -304,6 +305,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	// Deserialize the response and build the rows
 	var resp = &Rows{
 		streamRecv: &respClient,
+		schema: queryResp.GetRespSchema(),
 		set:  buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet()),
 		done: queryResp.GetDone(),
 	}

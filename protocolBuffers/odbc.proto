@@ -112,7 +112,9 @@ message row {
 }
 
 
-message CloseResponse {}
+message CloseResponse {
+    string session_duration = 1;
+}
 message LoadRequest {}
 message LoadResponse {}
 
