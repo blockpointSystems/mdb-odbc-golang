@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc"
-	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -260,10 +259,8 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	}
 
 	// Lock, check activeQuery flag, if not active, update, and unlock; set activeQuery to true.
-	// FIXME: Make atomic
 	if db.activeQuery {
-		panic("query active")
-		//return
+		return &Rows{}, fmt.Errorf("query already active")
 	}
 	db.activeQuery = true
 
@@ -297,9 +294,8 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 
 	// Grab the first result set
 	queryResp, err = respClient.Recv()
-	if err == io.EOF {
-		// No results exist. Close the stream and the query.
-		panic("eof")
+	if err != nil {
+		return &Rows{}, err
 	}
 
 	// Deserialize the response and build the rows
@@ -321,8 +317,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 
 	resp.close = func() error {
 		if !db.activeQuery {
-			// FIXME: return error
-			panic("query inactive, but hasn't been closed")
+			return fmt.Errorf("query active but hasn't been closed")
 		}
 
 		db.activeQuery = false

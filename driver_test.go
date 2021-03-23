@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -251,6 +252,74 @@ func TestBasicBegin(t *testing.T) {
 	}
 
 
+
+	mdb.Close()
+}
+
+
+func TestImportFile(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+
+		rows *sql.Rows
+
+		company struct{
+			symbol string
+			name string
+			sector string
+			price float32
+			price_earning float32
+			dividend_yield float32
+			earning_share float32
+			book_value float32
+			ft_week_low float32
+			ft_week_high float32
+			market_cap float64
+			EBITDA float64
+			sales float64
+			price_book_value float32
+			SEC_filings string
+		}
+	)
+
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("CREATE DATABASE main")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("USE main")
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT * FROM IMPORT = \"test_files/constituents-financials.csv\" (symbol string primary = true padded, name string padded, sector string padded, price float32, price_earning float32, dividend_yield float32, earning_share float32,  book_value float32, 52_week_low float32, 52_week_high float32, market_cap float64, EBITDA float64, sales float64, price_book_value float32, SEC_filings string padded)")
+	checkErr(t, mdb, err)
+
+	count := 1
+	for rows.Next() {
+		log.Println("RECORD: " + fmt.Sprintf("%d", count) )
+		err = rows.Scan(
+			&company.symbol,
+			&company.name,
+			&company.sector,
+			&company.price,
+			&company.price_earning,
+			&company.dividend_yield,
+			&company.earning_share,
+			&company.book_value,
+			&company.ft_week_low,
+			&company.ft_week_high,
+			&company.market_cap,
+			&company.EBITDA,
+			&company.sales,
+			&company.price_book_value,
+			&company.SEC_filings,
+		)
+		checkErr(t, mdb, err)
+		count ++
+		log.Printf("user: %v\n", company)
+	}
 
 	mdb.Close()
 }
