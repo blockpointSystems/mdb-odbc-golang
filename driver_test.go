@@ -81,6 +81,9 @@ func TestBasicSQLImplementation(t *testing.T) {
 	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
 	checkErr(t, mdb, err)
 
+	// Fail a query.
+	rows, err = mdb.Query("SELECT * FROM skrt_skrt")
+
 	rows, err = mdb.Query("SELECT * FROM sys_sessions")
 	checkErr(t, mdb, err)
 
