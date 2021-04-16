@@ -81,6 +81,9 @@ func TestBasicSQLImplementation(t *testing.T) {
 	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:4123)/master")
 	checkErr(t, mdb, err)
 
+	// Fail a query.
+	rows, err = mdb.Query("SELECT * FROM skrt_skrt")
+
 	rows, err = mdb.Query("SELECT * FROM sys_sessions")
 	checkErr(t, mdb, err)
 
@@ -287,9 +290,6 @@ func TestImportFile(t *testing.T) {
 	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
 	checkErr(t, mdb, err)
 
-	_, err = mdb.Exec("CREATE DATABASE main")
-	checkErr(t, mdb, err)
-
 	_, err = mdb.Exec("USE main")
 	checkErr(t, mdb, err)
 
@@ -319,6 +319,99 @@ func TestImportFile(t *testing.T) {
 		checkErr(t, mdb, err)
 		count ++
 		log.Printf("user: %v\n", company)
+	}
+
+	mdb.Close()
+}
+
+func TestDemoDBSetup(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+
+		rows *sql.Rows
+
+		price struct{
+			symbol string
+			price float32
+			dividend_yield float32
+			price_earning float32
+			earning_share float32
+			book_value float32
+			ft_week_low float32
+			ft_week_high float32
+		}
+
+		join struct{
+			s_symbol string
+			c_symbol string
+			c_name string
+			c_sector string
+		}
+	)
+
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/main")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("USE main")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("CREATE BLOCKCHAIN temp TRADITIONAL (symbol string primary = true packed, name string packed, sector string packed, price float32, dividend_yield float32, price_earning float32, earning_share float32, book_value float32, 52_week_low float32, 52_week_high float32, market_cap float64, EBITDA float64, sales float64, price_book_value float32, SEC_filings string packed)")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("CREATE BLOCKCHAIN companies HISTORICAL PLUS (symbol string primary = true packed, name string packed unique nullable, sector string packed default = \"Undefined\")")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("CREATE BLOCKCHAIN pricing SPARSE (symbol string primary = true packed, price float32, dividend_yield float32, price_earning float32, earning_share float32, book_value float32, 52_week_low float32 CHECK [52_week_high > 52_week_low], 52_week_high float32)")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("INSERT INTO temp SELECT * FROM IMPORT = \"test_files/constituents-financials.csv\" (symbol string primary = true packed, name string packed, sector string packed, price float32, price_earning float32, dividend_yield float32, earning_share float32,  book_value float32, 52_week_low float32, 52_week_high float32, market_cap float64, EBITDA float64, sales float64, price_book_value float32, SEC_filings string packed)")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("INSERT INTO companies SELECT symbol, name, sector FROM temp")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("INSERT INTO pricing SELECT symbol, price, dividend_yield, price_earning, earning_share, book_value, 52_week_low, 52_week_high FROM temp")
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT * FROM pricing")
+	checkErr(t, mdb, err)
+
+	count := 1
+	for rows.Next() {
+		log.Println("RECORD: " + fmt.Sprintf("%d", count) )
+		err = rows.Scan(
+			&price.symbol,
+			&price.price,
+			&price.dividend_yield,
+			&price.price_earning,
+			&price.earning_share,
+			&price.book_value,
+			&price.ft_week_low,
+			&price.ft_week_high,
+		)
+		checkErr(t, mdb, err)
+		count ++
+		log.Printf("pricing row: %v\n", price)
+	}
+
+	rows, err = mdb.Query("SELECT * FROM (SELECT pricing.symbol FROM pricing WHERE symbol = \"AAPL\") AS s JOIN (SELECT * FROM companies) AS c ON c.symbol = s.symbol")
+	checkErr(t, mdb, err)
+
+
+	count = 1
+	for rows.Next() {
+		log.Println("RECORD: " + fmt.Sprintf("%d", count) )
+		err = rows.Scan(
+			&join.s_symbol,
+			&join.c_symbol,
+			&join.c_name,
+			&join.c_sector,
+		)
+		checkErr(t, mdb, err)
+		count ++
+		log.Printf("joined row: %v\n", join)
 	}
 
 	mdb.Close()

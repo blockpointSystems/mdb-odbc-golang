@@ -273,6 +273,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 
 		query, err = db.interpolateParams(query, args)
 		if err != nil {
+			db.activeQuery = false
 			return nil, db.markBadConn(err)
 		}
 	}
@@ -285,6 +286,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	// Send command
 	respClient, err = db.MDBServiceClient.Query(context.Background(), req)
 	if err != nil {
+		db.activeQuery = false
 		return nil, db.markBadConn(err)
 	}
 
@@ -296,6 +298,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	// Grab the first result set
 	queryResp, err = respClient.Recv()
 	if err != nil {
+		db.activeQuery = false
 		return &Rows{}, err
 	}
 
