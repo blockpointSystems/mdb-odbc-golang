@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package bsql;
+package odbc.v1;
 
 //import "google/protobuf/timestamp.proto";
 
 // bsqlpb is the golang package that will be used to communicate and cary out transactions with the database
-option go_package = "gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc";
+option go_package = "gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/v1/odbc";
 
 
 message DummyRequest {}

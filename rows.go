@@ -2,7 +2,7 @@ package mdb
 
 import (
 	"database/sql/driver"
-	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc"
+	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/v1/odbc"
 	"io"
 	"reflect"
 	"sync/atomic"
