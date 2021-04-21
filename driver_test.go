@@ -354,9 +354,6 @@ func TestDemoDBSetup(t *testing.T) {
 	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/main")
 	checkErr(t, mdb, err)
 
-	_, err = mdb.Exec("USE main")
-	checkErr(t, mdb, err)
-
 	_, err = mdb.Exec("CREATE BLOCKCHAIN temp TRADITIONAL (symbol string primary = true packed, name string packed, sector string packed, price float32, dividend_yield float32, price_earning float32, earning_share float32, book_value float32, 52_week_low float32, 52_week_high float32, market_cap float64, EBITDA float64, sales float64, price_book_value float32, SEC_filings string packed)")
 	checkErr(t, mdb, err)
 
@@ -416,6 +413,141 @@ func TestDemoDBSetup(t *testing.T) {
 
 	mdb.Close()
 }
+
+func TestBackupRestore(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+
+		rows *sql.Rows
+
+		//price struct{
+		//	symbol string
+		//	price float32
+		//	dividend_yield float32
+		//	price_earning float32
+		//	earning_share float32
+		//	book_value float32
+		//	ft_week_low float32
+		//	ft_week_high float32
+		//}
+
+		company struct{
+			symbol string
+			name string
+			sector string
+		}
+	)
+
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/main")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("USE main")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("CREATE BLOCKCHAIN temp TRADITIONAL (symbol string primary = true packed, name string packed, sector string packed, price float32, dividend_yield float32, price_earning float32, earning_share float32, book_value float32, 52_week_low float32, 52_week_high float32, market_cap float64, EBITDA float64, sales float64, price_book_value float32, SEC_filings string packed)")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("CREATE BLOCKCHAIN companies HISTORICAL PLUS (symbol string primary = true packed, name string packed unique nullable, sector string packed default = \"Undefined\")")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("INSERT INTO temp SELECT * FROM IMPORT = \"test_files/constituents-financials.csv\" (symbol string primary = true packed, name string packed, sector string packed, price float32, price_earning float32, dividend_yield float32, earning_share float32,  book_value float32, 52_week_low float32, 52_week_high float32, market_cap float64, EBITDA float64, sales float64, price_book_value float32, SEC_filings string packed)")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("INSERT INTO companies SELECT symbol, name, sector FROM temp")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("BACKUP main.companies TO DISK \"companies_backup\"")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("INSERT companies VALUES (\"POLA\", \"Polar Power, Inc\", \"Industrial\")")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Exec("RESTORE main.companies FROM \"bsql_backups/companies_backup.zip\"")
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT * FROM companies")
+	checkErr(t, mdb, err)
+
+	count := 1
+	for rows.Next() {
+		log.Println("RECORD: " + fmt.Sprintf("%d", count))
+		err = rows.Scan(
+			&company.symbol,
+			&company.name,
+			&company.sector,
+		)
+		checkErr(t, mdb, err)
+		count ++
+		log.Printf("company row: %v\n", company)
+	}
+
+	mdb.Close()
+}
+
+
+func TestSystemMetadata(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+
+		sysDB_rows,
+		sysBC_rows *sql.Rows
+
+		db struct{
+			name 		  string
+		}
+
+		blockchain struct{
+			bcName string
+			bcId uint16
+			blockchainType uint16
+			cName string
+			cOrder uint16
+			cType uint8
+		}
+	)
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
+
+	// Fail a query.
+	sysDB_rows, err = mdb.Query("SELECT name FROM sys_databases")
+	for sysDB_rows.Next() {
+		err = sysDB_rows.Scan(
+			&db.name,
+		)
+
+		log.Printf("DB Name: %v\n", db)
+
+		// Enter the first database.
+		_, err = mdb.Exec(fmt.Sprintf("USE %s", db.name))
+		checkErr(t, mdb, err)
+
+		// Get the blockchains and their columns.
+		sysBC_rows, err = mdb.Query(
+			"SELECT  b.name, b.id, b.blockchain_type, c.name, c.order, c.type  " +
+			"FROM sysblockchains AS b JOIN syscolumns AS c" +
+			" ON b.id = c.blockchain_id WHERE b.id > 16 ")
+		checkErr(t, mdb, err)
+
+		for sysBC_rows.Next() {
+			err = sysBC_rows.Scan(
+				&blockchain.bcName,
+				&blockchain.bcId,
+				&blockchain.blockchainType,
+				&blockchain.cName,
+				&blockchain.cOrder,
+				&blockchain.cType,
+			)
+			checkErr(t, mdb, err)
+			log.Printf("BC: %v\n", blockchain)
+		}
+	}
+
+	mdb.Close()
+}
+
 
 // Test Begin
 
