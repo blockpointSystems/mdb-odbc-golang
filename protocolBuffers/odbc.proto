@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package bsql;
+package odbc.v1;
 
 //import "google/protobuf/timestamp.proto";
 
 // bsqlpb is the golang package that will be used to communicate and cary out transactions with the database
-option go_package = "gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc";
+option go_package = "gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/v1/odbc";
 
 
 message DummyRequest {}
@@ -25,6 +25,13 @@ message authPacket {
     string j_w_t    = 3;
 }
 
+message duration {
+    string string       = 1;
+    int64 nano_seconds  = 2;
+    int64 micro_seconds = 3;
+    int64 milli_seconds = 4;
+}
+
 message XactRequest {
     authPacket auth = 1;
 
@@ -34,9 +41,8 @@ message XactRequest {
 
 message XactResponse {
     authPacket auth = 1;
-
     uint64 xact_id  = 2;
-//    bool   success = 2;
+    //    bool   success = 2;
 }
 
 message ExecRequest {
@@ -47,9 +53,10 @@ message ExecRequest {
 message ExecResponse {
     authPacket auth = 1;
 
-    string response      = 2;
-    int64  insert_id     = 3;
-    int64  affected_rows = 4;
+    string   response      = 2;
+    int64    insert_id     = 3;
+    int64    affected_rows = 4;
+    duration duration      = 5;
 }
 
 
@@ -64,8 +71,9 @@ message QueryResponse {
     int32    resp_length    = 2;
     schema   resp_schema    = 3;
     repeated row result_set = 4;
+    duration duration       = 5;
 
-    bool     done           = 5;
+    bool     done           = 6;
 }
 
 message schema {
@@ -94,10 +102,10 @@ enum datatype {
 
     FLOAT32    = 12;
     FLOAT64    = 13;
-//    COMPLEX64  = 12;
-//    COMPLEX128 = 13;
-//
-//    UINTPTR = 14;
+    //    COMPLEX64  = 12;
+    //    COMPLEX128 = 13;
+    //
+    //    UINTPTR = 14;
 
     BOOL = 14;
 
@@ -122,7 +130,7 @@ message LoadResponse {}
 // Query Services
 // Query Services define all the different gRPC queries that can be performed within the bSQL Protocol Buffer
 service MDBService {
-    
+
     ////////////////////////////////////////////////////////////////////////////////
     ////                            Unary requests                              ////
     ////////////////////////////////////////////////////////////////////////////////

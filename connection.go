@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/odbc"
+	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/v1/odbc"
 	"math"
 	"strconv"
 	"strings"
@@ -230,6 +230,7 @@ func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
 	if err != nil {
 		return
 	}
+	// TODO: Update JWT
 
 	// Log affected Rows
 	affectedRows = resp.AffectedRows
@@ -245,7 +246,7 @@ func (db *Conn) Query(query string, args []driver.Value) (driver.Rows, error) {
 
 func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	var (
-		req  	  *odbc.QueryRequest
+		req        *odbc.QueryRequest
 		respClient odbc.MDBService_QueryClient
 
 		queryResp *odbc.QueryResponse
@@ -439,21 +440,21 @@ func (db *Conn) interpolateParams(query string, args []driver.Value) (resp strin
 			if v.IsZero() {
 				buf = append(buf, "'0000-00-00'"...)
 			} else {
-				buf = append(buf, '\'')
+				buf = append(buf, '"')
 				buf, err = appendDateTime(buf, v.In(db.cfg.Loc))
 				if err != nil {
 					return "", err
 				}
-				buf = append(buf, '\'')
+				buf = append(buf, '"')
 			}
 		case json.RawMessage:
-			buf = append(buf, '\'')
+			buf = append(buf, '"')
 			if db.status&statusNoBackslashEscapes == 0 {
 				buf = escapeBytesBackslash(buf, v)
 			} else {
 				buf = escapeBytesQuotes(buf, v)
 			}
-			buf = append(buf, '\'')
+			buf = append(buf, '"')
 		case []byte:
 			if v == nil {
 				buf = append(buf, "NULL"...)
@@ -464,7 +465,7 @@ func (db *Conn) interpolateParams(query string, args []driver.Value) (resp strin
 				//} else {
 				//	buf = escapeBytesQuotes(buf, v)
 				//}
-				//buf = append(buf, '\'')
+				//buf = append(buf, '"')
 				buf = append(
 					buf,
 					fmt.Sprintf("%d", v)...,

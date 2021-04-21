@@ -26,7 +26,7 @@ func TestBasicDriverUsage(t *testing.T) {
 		err error
 	)
 
-	connector, err = d.OpenConnector("system:biglove@tcp(0.0.0.0:8080)/main")
+	connector, err = d.OpenConnector("system:biglove@tcp(0.0.0.0:4123)/main")
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +78,7 @@ func TestBasicSQLImplementation(t *testing.T) {
 	)
 
 
-	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:4123)/master")
 	checkErr(t, mdb, err)
 
 	// Fail a query.

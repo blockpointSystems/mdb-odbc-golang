@@ -41,7 +41,7 @@ func NewMDBServiceClient(cc grpc.ClientConnInterface) MDBServiceClient {
 
 func (c *mDBServiceClient) InitializeConnection(ctx context.Context, in *InitializationRequest, opts ...grpc.CallOption) (*AuthPacket, error) {
 	out := new(AuthPacket)
-	err := c.cc.Invoke(ctx, "/bsql.MDBService/InitializeConnection", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/odbc.v1.MDBService/InitializeConnection", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *mDBServiceClient) InitializeConnection(ctx context.Context, in *Initial
 
 func (c *mDBServiceClient) Begin(ctx context.Context, in *XactRequest, opts ...grpc.CallOption) (*XactResponse, error) {
 	out := new(XactResponse)
-	err := c.cc.Invoke(ctx, "/bsql.MDBService/Begin", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/odbc.v1.MDBService/Begin", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (c *mDBServiceClient) Begin(ctx context.Context, in *XactRequest, opts ...g
 
 func (c *mDBServiceClient) Close(ctx context.Context, in *AuthPacket, opts ...grpc.CallOption) (*CloseResponse, error) {
 	out := new(CloseResponse)
-	err := c.cc.Invoke(ctx, "/bsql.MDBService/Close", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/odbc.v1.MDBService/Close", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (c *mDBServiceClient) Close(ctx context.Context, in *AuthPacket, opts ...gr
 
 func (c *mDBServiceClient) Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error) {
 	out := new(ExecResponse)
-	err := c.cc.Invoke(ctx, "/bsql.MDBService/Exec", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/odbc.v1.MDBService/Exec", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (c *mDBServiceClient) Exec(ctx context.Context, in *ExecRequest, opts ...gr
 }
 
 func (c *mDBServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (MDBService_QueryClient, error) {
-	stream, err := c.cc.NewStream(ctx, &MDBService_ServiceDesc.Streams[0], "/bsql.MDBService/Query", opts...)
+	stream, err := c.cc.NewStream(ctx, &MDBService_ServiceDesc.Streams[0], "/odbc.v1.MDBService/Query", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (x *mDBServiceQueryClient) Recv() (*QueryResponse, error) {
 }
 
 func (c *mDBServiceClient) Load(ctx context.Context, opts ...grpc.CallOption) (MDBService_LoadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &MDBService_ServiceDesc.Streams[1], "/bsql.MDBService/Load", opts...)
+	stream, err := c.cc.NewStream(ctx, &MDBService_ServiceDesc.Streams[1], "/odbc.v1.MDBService/Load", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func _MDBService_InitializeConnection_Handler(srv interface{}, ctx context.Conte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bsql.MDBService/InitializeConnection",
+		FullMethod: "/odbc.v1.MDBService/InitializeConnection",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MDBServiceServer).InitializeConnection(ctx, req.(*InitializationRequest))
@@ -222,7 +222,7 @@ func _MDBService_Begin_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bsql.MDBService/Begin",
+		FullMethod: "/odbc.v1.MDBService/Begin",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MDBServiceServer).Begin(ctx, req.(*XactRequest))
@@ -240,7 +240,7 @@ func _MDBService_Close_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bsql.MDBService/Close",
+		FullMethod: "/odbc.v1.MDBService/Close",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MDBServiceServer).Close(ctx, req.(*AuthPacket))
@@ -258,7 +258,7 @@ func _MDBService_Exec_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/bsql.MDBService/Exec",
+		FullMethod: "/odbc.v1.MDBService/Exec",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MDBServiceServer).Exec(ctx, req.(*ExecRequest))
@@ -317,7 +317,7 @@ func (x *mDBServiceLoadServer) Recv() (*LoadRequest, error) {
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var MDBService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "bsql.MDBService",
+	ServiceName: "odbc.v1.MDBService",
 	HandlerType: (*MDBServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
