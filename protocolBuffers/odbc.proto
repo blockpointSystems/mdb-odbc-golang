@@ -26,8 +26,10 @@ message authPacket {
 }
 
 message duration {
-    int64 start_nano_seconds = 1;
-    int64 end_nano_seconds   = 2;
+    string string       = 1;
+    int64 nano_seconds  = 2;
+    int64 micro_seconds = 3;
+    int64 milli_seconds = 4;
 }
 
 message XactRequest {
