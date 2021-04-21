@@ -3,7 +3,7 @@ package mdb
 import (
 	"database/sql/driver"
 	"fmt"
-	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/v1/odbc"
+	"gitlab.com/blockpoint/protocol-buffers/v1/odbc"
 	"gitlab.com/blockpoint/mdb-redesign/common/cryptography"
 
 	"testing"

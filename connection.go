@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"gitlab.com/blockpoint/mdb-odbc-golang/protocolBuffers/v1/odbc"
+	"gitlab.com/blockpoint/protocol-buffers/v1/odbc"
 	"math"
 	"strconv"
 	"strings"
