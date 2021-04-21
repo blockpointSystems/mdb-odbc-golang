@@ -6,7 +6,7 @@ require (
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/uuid v1.2.0
 	gitlab.com/blockpoint/mdb-redesign v0.0.0-20210223023612-d4459f598a55
-	gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421153836-1e5b956c4fac
+	gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421214106-f4bfdcac0143
 	golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529 // indirect
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/sys v0.0.0-20210304124612-50617c2ba197 // indirect

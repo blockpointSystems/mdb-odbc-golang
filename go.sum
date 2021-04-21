@@ -38,6 +38,8 @@ gitlab.com/blockpoint/mdb-redesign v0.0.0-20210223023612-d4459f598a55 h1:PauAh0x
 gitlab.com/blockpoint/mdb-redesign v0.0.0-20210223023612-d4459f598a55/go.mod h1:dBLIwL7hmJdUPLL2MpXzb/CBw9dcBkNRsIxdxwUjl2Q=
 gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421153836-1e5b956c4fac h1:BG77PX9hgeRz+ikBp2FeYH4befcnNGQyUsciAdLxxXA=
 gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421153836-1e5b956c4fac/go.mod h1:Ms4HL++V9ChMJU2yjuuDciLhbileiu1KFXFyPUTDNpo=
+gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421214106-f4bfdcac0143 h1:jocV/2mcbPvLMzDt1vWPk6NcVyNVyi0GKuT5SJ6c41A=
+gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421214106-f4bfdcac0143/go.mod h1:Ms4HL++V9ChMJU2yjuuDciLhbileiu1KFXFyPUTDNpo=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529 h1:iMGN4xG0cnqj3t+zOM8wUB0BiPKHEwSxEZCvzcbZuvk=
 golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
