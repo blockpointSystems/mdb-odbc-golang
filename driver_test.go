@@ -66,7 +66,6 @@ func TestBasicSQLImplementation(t *testing.T) {
 
 		command struct{
 			id 		  string `db:"id"`
-			xactId    uint64
 			status    bool
 			startTime 	  time.Time
 			endTime  		time.Time
@@ -74,24 +73,24 @@ func TestBasicSQLImplementation(t *testing.T) {
 			username string
 			commandType uint8
 			SQLtext string
+			xactId    uint64
 		}
 	)
 
 
-	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:4123)/master")
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
 	checkErr(t, mdb, err)
 
 	// Fail a query.
 	rows, err = mdb.Query("SELECT * FROM skrt_skrt")
 
-	rows, err = mdb.Query("SELECT * FROM sys_sessions")
+	rows, err = mdb.Query("SELECT *, sys_xact FROM sys_sessions")
 	checkErr(t, mdb, err)
 
 
 	for rows.Next() {
 		err = rows.Scan(
 			&command.id,
-			&command.xactId,
 			&command.status,
 			&command.startTime,
 			&command.endTime,
@@ -99,6 +98,7 @@ func TestBasicSQLImplementation(t *testing.T) {
 			&command.username,
 			&command.commandType,
 			&command.SQLtext,
+			&command.xactId,
 			)
 		checkErr(t, mdb, err)
 
@@ -162,6 +162,78 @@ func TestBasicExecImplementation(t *testing.T) {
 	}
 
 	mdb.Close()
+}
+
+func TestBasicAmend(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+		result sql.Result
+	)
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
+	checkErr(t, mdb, err)
+
+	result, err = mdb.Exec("CREATE DATABASE users")
+	checkErr(t, mdb, err)
+
+	handleResult(t, mdb, result)
+
+	result, err = mdb.Exec("USE users")
+	checkErr(t, mdb, err)
+
+	handleResult(t, mdb, result)
+
+	result, err = mdb.Exec("CREATE BLOCKCHAIN user SPARSE " +
+		"(id uint64 PRIMARY KEY AUTO INCREMENT [1, 1], " +
+		"stripe_token string size=14, " +
+		"first_name string size=50 PACKED, " +
+		"last_name string size=100 PACKED, " +
+		"email string size=255 PACKED UNIQUE, " +
+		"phone_number string size=20 PACKED, " +
+		"verified_email bool default=false, " +
+		"verified_phone bool default=false, " +
+		"two_factor_secret BYTE ARRAY nullable size=20, " +
+		"password_hash BYTE ARRAY size=32, " +
+		"salt BYTE ARRAY size=32)")
+	checkErr(t, mdb, err)
+
+	handleResult(t, mdb, result)
+
+	result, err = mdb.Exec("INSERT user (stripe_token, first_name, last_name, email, phone_number, " +
+		" two_factor_secret, password_hash, salt)  VALUES (" +
+		"\"hi\", " +
+		"\"hi\", " +
+		"\"hi\", " +
+		"\"hi\", " +
+		"\"hi\", " +
+		"[100], " +
+		"[100], " +
+		"[100] " +
+		")")
+	checkErr(t, mdb, err)
+
+	result, err = mdb.Exec("AMEND user (id, verified_phone)" +
+		" VALUES (" +
+		"1, " +
+		"true " +
+		")")
+	checkErr(t, mdb, err)
+
+	result, err = mdb.Exec("AMEND user (id, verified_email)" +
+		" VALUES (" +
+		"1, " +
+		"true " +
+		")")
+	checkErr(t, mdb, err)
+
+	mdb.Close()
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
+	checkErr(t, mdb, err)
+
+	_, err = mdb.Query("SELECT * ")
+	checkErr(t, mdb, err)
 }
 
 
