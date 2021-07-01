@@ -2,9 +2,10 @@ package mdb
 
 import (
 	"database/sql/driver"
+	"encoding/base32"
 	"fmt"
-	"gitlab.com/blockpoint/protocol-buffers/v1/odbc"
 	"gitlab.com/blockpoint/mdb-redesign/common/cryptography"
+	"gitlab.com/blockpoint/protocol-buffers/v1/odbc"
 
 	"testing"
 )
@@ -34,6 +35,11 @@ func TestConn_interpolateParams(t *testing.T) {
 
 	tmpPWHash, tmpSalt := cryptography.HashPassword("meow")
 	expOutput := "INSERT main.user (stripe_id, first_name, last_name, firm_name, email, phone_number, address1, address2, city, state, zip, password_hash, salt) VALUES (\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", %d, \"%s\", %d, %d) OUTPUT id"
+
+	var secret, err = base32.StdEncoding.DecodeString("")
+	if err != nil {
+		panic(err)
+	}
 
 	tests := []struct {
 		name     string
@@ -71,6 +77,18 @@ func TestConn_interpolateParams(t *testing.T) {
 			name:     "Basic test 3",
 			fields:   baseFields,
 			args:     args{
+				query: "DISCONTINUE main.user (id) VALUES (?)",
+				args:  []driver.Value{
+					[]byte{},
+				},
+			},
+			wantResp: "DISCONTINUE main.user (id) VALUES ([])",
+			wantErr:  false,
+		},
+		{
+			name:     "Basic test 4",
+			fields:   baseFields,
+			args:     args{
 				query: "INSERT main.user (stripe_id, first_name, last_name, firm_name, email, phone_number, address1, address2, city, state, zip, password_hash, salt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) OUTPUT id",
 				args:  []driver.Value{
 					"J3V60cVnmGcvM3",
@@ -88,6 +106,18 @@ func TestConn_interpolateParams(t *testing.T) {
 				"PO Box 4112", "", "San Diego", 2, "92067",
 				tmpPWHash, tmpSalt,
 			),
+			wantErr:  false,
+		},
+		{
+			name:     "Basic test 5",
+			fields:   baseFields,
+			args:     args{
+				query: "AMEND user (id, two_factor_secret) VALUES (?, ?)",
+				args:  []driver.Value{
+					int64(312), secret,
+				},
+			},
+			wantResp: "DISCONTINUE main.user (id) VALUES (312, [])",
 			wantErr:  false,
 		},
 	}
