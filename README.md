@@ -146,13 +146,13 @@ if err != nil {
 }
 
 // Creating a blockchain using a transaction STILL executes atomically.
-_, err = xact.Exec("CREATE BLOCKCHAIN users TRADITIONAL (id UINT8 PRIMARY, name STRING PACKED, email STRING PACKED NULLABLE)")
+_, err = xact.Exec(`CREATE BLOCKCHAIN users TRADITIONAL (id UINT8 PRIMARY, name STRING PACKED, email STRING PACKED NULLABLE)`)
 if err != nil {
 	panic(err)
 }
 
 // Insert two value non- atomically.
-_, err = mdb.Exec("INSERT users VALUES (1, \"rolly\", \"rolly@corgicutie.com\"), (2, \"hank\", \"hank@neigbordog.com\")")
+_, err = mdb.Exec(`INSERT users VALUES (1, "rolly", "rolly@corgicutie.com"), (2, "hank", "hank@neigbordog.com")`)
 if err != nil {
 	// We can rollback in the case of an insertion error, undoing the above mutation.
 	if rollbackErr := xact.Rollback(); rollbackErr != nil {
@@ -205,7 +205,7 @@ var (
 )
 
 // Query from the sys_session system blockchain, specifying the transaction ID as well.
-rows, err = mdb.Query("SELECT *, sys_xact FROM sys_sessions")
+rows, err = mdb.Query(`SELECT *, sys_xact FROM sys_sessions`)
 if err != nil {
 	panic(err)
 }
