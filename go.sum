@@ -58,6 +58,8 @@ gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421214106-f4bfdcac0143 h1:joc
 gitlab.com/blockpoint/protocol-buffers v0.0.0-20210421214106-f4bfdcac0143/go.mod h1:Ms4HL++V9ChMJU2yjuuDciLhbileiu1KFXFyPUTDNpo=
 gitlab.com/blockpoint/protocol-buffers v0.0.0-20210702172751-e8d1a89b7271 h1:qRZ4/uQ8S8LjQdO6RNjoN3Z0aHIqDAhz24TETx2m/SU=
 gitlab.com/blockpoint/protocol-buffers v0.0.0-20210702172751-e8d1a89b7271/go.mod h1:9DnJlVpZXNGdeGC7l0bs7eSuqRXVbDOcDL40hw4P6CU=
+gitlab.com/blockpoint/protocol-buffers v0.0.0-20210702190644-9f69fe419917 h1:jECJBI+kiF7K1NW/r+nCW8htpkYoErlArDsBnFKHdDc=
+gitlab.com/blockpoint/protocol-buffers v0.0.0-20210702190644-9f69fe419917/go.mod h1:9DnJlVpZXNGdeGC7l0bs7eSuqRXVbDOcDL40hw4P6CU=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529 h1:iMGN4xG0cnqj3t+zOM8wUB0BiPKHEwSxEZCvzcbZuvk=
