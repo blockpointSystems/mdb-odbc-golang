@@ -15,7 +15,7 @@ func TestConn_interpolateParams(t *testing.T) {
 		cfg                 *Config
 		status              statusFlag
 		MDBServiceClient    odbc.MDBServiceClient
-		activeQuery         bool
+		activeQuery         uint32
 		queryResponseStream *odbc.MDBService_QueryClient
 	}
 	type args struct {
@@ -29,7 +29,7 @@ func TestConn_interpolateParams(t *testing.T) {
 			MaxAllowedPacket:  10000,
 		},
 		MDBServiceClient:    nil,
-		activeQuery:         false,
+		activeQuery:         0,
 		queryResponseStream: nil,
 	}
 

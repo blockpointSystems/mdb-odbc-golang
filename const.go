@@ -7,6 +7,8 @@ import (
 
 const (
 	DEFAULT_ADDR_PORT = "8080"
+	DEFAULT_MAX_ROWS = int32(-1)
+	DEFAULT_BATCH_SIZE = 10
 )
 
 var (

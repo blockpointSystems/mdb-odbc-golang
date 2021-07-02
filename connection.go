@@ -101,6 +101,7 @@ func (db *Conn) configureConnection() (err error) {
 	return
 }
 
+
 // Prepare returns a prepared statement, bound to this connection.
 func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 	s = &Stmt{
@@ -289,6 +290,8 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	req = &odbc.QueryRequest{
 		Auth: 	   db.auth,
 		Statement: query,
+		MaxResponseLength: db.cfg.MaxRowCount,
+		BatchSize: db.cfg.FetchSize,
 	}
 
 	// Send command

@@ -57,6 +57,42 @@ func TestBasicDriverUsage(t *testing.T) {
 
 }
 
+func TestSQLMaxRows(t *testing.T) {
+	var (
+		mdb *sql.DB
+		err error
+		maxRows = 100
+		batchSize = 11000
+		totalRows = 129
+		rows *sql.Rows
+	)
+
+
+	mdb, err = sql.Open("mdb", fmt.Sprintf("system:biglove@tcp(0.0.0.0:8080)/master?maxrowcount=%d&batchsize=%d", maxRows, batchSize))
+	checkErr(t, mdb, err)
+
+	rows, err = mdb.Query("SELECT *, sys_xact FROM syscolumns")
+	checkErr(t, mdb, err)
+
+	count := 0
+	for rows.Next() {
+		count ++
+	}
+
+	if maxRows > totalRows {
+		if count != totalRows {
+			panic(fmt.Sprintf("Didn't stop at max rows: %d, stopped at: %d", maxRows, count))
+		}
+	} else {
+		if count != maxRows {
+			panic(fmt.Sprintf("Didn't stop at max rows: %d, stopped at: %d", maxRows, count))
+		}
+	}
+
+
+	mdb.Close()
+}
+
 func TestBasicSQLImplementation(t *testing.T) {
 	var (
 		mdb *sql.DB
@@ -80,6 +116,7 @@ func TestBasicSQLImplementation(t *testing.T) {
 
 	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
 	checkErr(t, mdb, err)
+
 
 	// Fail a query.
 	rows, err = mdb.Query("SELECT * FROM skrt_skrt")

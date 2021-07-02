@@ -51,6 +51,8 @@ type Config struct {
 	//ColumnsWithAlias        bool // Prepend table alias to column names
 	InterpolateParams       bool // Interpolate placeholders into query string
 	//MultiStatements         bool // Allow multiple statements in one query
+	MaxRowCount,
+	FetchSize int32
 	ParseTime               bool // Parse time values to time.Time
 	RejectReadOnly          bool // Reject read-only connections
 }
@@ -62,6 +64,8 @@ func NewConfig() *Config {
 		Loc:                  time.UTC,
 		MaxAllowedPacket:     defaultMaxAllowedPacket,
 		CheckConnLiveness:    true,
+		FetchSize: DEFAULT_BATCH_SIZE,
+		MaxRowCount: DEFAULT_MAX_ROWS,
 	}
 }
 
@@ -373,6 +377,22 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			if !isBool {
 				return errors.New("invalid bool value: " + value)
 			}
+
+		case "maxrowcount":
+			var inter int64
+			inter, err = strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return errors.New("invalid maxrowcount value: " + value)
+			}
+			cfg.MaxRowCount = int32(inter)
+
+		case "fetchsize":
+			var inter int64
+			inter, err = strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return errors.New("invalid fetchsize value: " + value)
+			}
+			cfg.FetchSize = int32(inter)
 
 		//// Collation
 		//case "collation":
