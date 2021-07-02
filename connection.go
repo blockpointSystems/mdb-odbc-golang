@@ -24,14 +24,14 @@ type Conn struct {
 	status statusFlag
 
 	// TODO: Make atomic
-	closed bool
+	closed uint32
 
 	// Operational
 	odbc.MDBServiceClient
 	auth *odbc.AuthPacket
 
 	// Query
-	activeQuery         bool
+	activeQuery         uint32
 	queryResponseStream *odbc.MDBService_QueryClient
 }
 
@@ -122,6 +122,14 @@ func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 func (db *Conn)	Close() (err error) {
 	if !db.IsClosed() {
 		db.SetClosed()
+		if db.IsActiveQuery() {
+			err = db.closeQuery()
+			if err != nil {
+				db.SetNotClosed()
+				return
+			}
+		}
+
 		_, err = db.MDBServiceClient.Close(context.Background(), db.auth)
 		db.MDBServiceClient = nil
 	}
@@ -260,10 +268,10 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	}
 
 	// Lock, check activeQuery flag, if not active, update, and unlock; set activeQuery to true.
-	if db.activeQuery {
+	if db.IsActiveQuery() {
 		return &Rows{}, fmt.Errorf("query already active")
 	}
-	db.activeQuery = true
+	db.SetActiveQuery()
 
 
 	if len(args) != 0 {
@@ -273,7 +281,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 
 		query, err = db.interpolateParams(query, args)
 		if err != nil {
-			db.activeQuery = false
+			db.SetNotActiveQuery()
 			return nil, db.markBadConn(err)
 		}
 	}
@@ -286,7 +294,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	// Send command
 	respClient, err = db.MDBServiceClient.Query(context.Background(), req)
 	if err != nil {
-		db.activeQuery = false
+		db.SetNotActiveQuery()
 		return nil, db.markBadConn(err)
 	}
 
@@ -298,7 +306,7 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	// Grab the first result set
 	queryResp, err = respClient.Recv()
 	if err != nil {
-		db.activeQuery = false
+		db.SetNotActiveQuery()
 		return &Rows{}, err
 	}
 
@@ -314,21 +322,27 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	//	respClient.CloseSend()
 	//
 	//	// FIXME: Update this
-	//	db.activeQuery = false
+	//	db.SetNotActiveQuery()
 	//	resp.close = func() error { return nil }
 	//	return resp, nil
 	//}
 
 	resp.close = func() error {
-		if !db.activeQuery {
+		if !db.IsActiveQuery() {
 			return fmt.Errorf("query active but hasn't been closed")
 		}
 
-		db.activeQuery = false
+		db.SetNotActiveQuery()
 		return (*db.queryResponseStream).CloseSend()
 	}
 
 	return resp, nil
+}
+
+
+func (db *Conn) closeQuery() (err error) {
+	_, err = db.CloseQuery(context.Background(), db.auth)
+	return
 }
 
 func buildResultSet(schema *odbc.Schema, set []*odbc.Row) (rs resultSet) {

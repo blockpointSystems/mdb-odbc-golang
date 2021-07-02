@@ -197,12 +197,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/connection.go</url>
-          <line>396</line>
+          <line>410</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/connection.go</url>
-          <line>482</line>
+          <line>496</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -214,21 +214,6 @@
           <url>file://$PROJECT_DIR$/../../../../pkg/mod/gitlab.com/blockpoint/mdb-odbc-golang@v0.0.0-20210318163114-b744f37205a1/driver.go</url>
           <line>42</line>
           <option name="timeStamp" value="6" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/driver_test.go</url>
-          <line>30</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/driver_test.go</url>
-          <line>38</line>
-          <option name="timeStamp" value="9" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/driver_test.go</url>
-          <line>35</line>
-          <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/../portal/backend/user/routes.go</url>
@@ -259,11 +244,6 @@
           <url>file://$PROJECT_DIR$/utlis.go</url>
           <line>296</line>
           <option name="timeStamp" value="39" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/connection_test.go</url>
-          <line>134</line>
-          <option name="timeStamp" value="40" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/../portal/backend/user/routes_verification.go</url>

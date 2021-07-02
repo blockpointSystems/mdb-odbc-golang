@@ -1,18 +1,32 @@
 package mdb
 
-import "database/sql/driver"
+import (
+	"database/sql/driver"
+	"sync/atomic"
+)
 
 func (db *Conn) IsClosed() bool {
-	if db != nil {
-		//panic("Implement me!")
-		return db.closed
-	}
-	return true
+	return atomic.LoadUint32(&db.closed) != 0
 }
 
 func (db *Conn) SetClosed() {
-	// TODO: Make atomic
-	db.closed = true
+	atomic.StoreUint32(&db.closed, 1)
+}
+
+func (db *Conn) SetNotClosed() {
+	atomic.StoreUint32(&db.closed, 0)
+}
+
+func (db *Conn) IsActiveQuery() bool {
+	return atomic.LoadUint32(&db.activeQuery) != 0
+}
+
+func (db *Conn) SetActiveQuery() {
+	atomic.StoreUint32(&db.activeQuery, 1)
+}
+
+func (db *Conn) SetNotActiveQuery() {
+	atomic.StoreUint32(&db.activeQuery, 0)
 }
 
 func (db *Conn) markBadConn(err error) error {
