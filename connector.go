@@ -26,8 +26,6 @@ func (c *connector) Connect(ctx context.Context) (conn driver.Conn, err error) {
 
 	mdbConn = &Conn{
 		cfg:              c.cfg,
-	  //status:           0,
-
 		MDBServiceClient: odbc.NewMDBServiceClient(grpcConn),
 	}
 

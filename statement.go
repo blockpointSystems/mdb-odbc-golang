@@ -6,7 +6,6 @@ import "database/sql/driver"
 // used by multiple goroutines concurrently.
 type Stmt struct {
 	conn *Conn
-
 	stmt 	   string
 	paramCount int
 }
