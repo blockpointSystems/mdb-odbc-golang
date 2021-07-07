@@ -378,7 +378,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return errors.New("invalid bool value: " + value)
 			}
 
-		case "maxrowcount":
+		case "maxRowCount":
 			var inter int64
 			inter, err = strconv.ParseInt(value, 10, 32)
 			if err != nil {
@@ -386,7 +386,7 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			}
 			cfg.MaxRowCount = int32(inter)
 
-		case "fetchsize":
+		case "fetchSize":
 			var inter int64
 			inter, err = strconv.ParseInt(value, 10, 32)
 			if err != nil {

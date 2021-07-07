@@ -68,7 +68,7 @@ func TestSQLMaxRows(t *testing.T) {
 	)
 
 
-	mdb, err = sql.Open("mdb", fmt.Sprintf("system:biglove@tcp(0.0.0.0:8080)/master?maxrowcount=%d&batchsize=%d", maxRows, batchSize))
+	mdb, err = sql.Open("mdb", fmt.Sprintf("system:biglove@tcp(0.0.0.0:8080)/master?maxRowCount=%d&fetchSize=%d", maxRows, batchSize))
 	checkErr(t, mdb, err)
 
 	rows, err = mdb.Query("SELECT *, sys_xact FROM syscolumns")
