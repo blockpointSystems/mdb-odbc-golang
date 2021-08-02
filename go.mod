@@ -1,4 +1,4 @@
-module gitlab.com/blockpoint/mdb-odbc-golang
+module github.com/blockpointSystems/mdb-odbc-golang.git
 
 go 1.16
 
