@@ -3,7 +3,7 @@ package mdb
 import (
 	"context"
 	"database/sql/driver"
-	"gitlab.com/blockpoint/protocol-buffers/v1/odbc"
+	"github.com/blockpointSystems/protocol-buffers/v1/odbc"
 	"google.golang.org/grpc"
 )
 

@@ -7,14 +7,12 @@
     <list default="true" id="2367303e-c2c3-44c7-80f4-e706bbc082df" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/connection.go" beforeDir="false" afterPath="$PROJECT_DIR$/connection.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/connection_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/connection_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/connection_test.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/connector.go" beforeDir="false" afterPath="$PROJECT_DIR$/connector.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/const.go" beforeDir="false" afterPath="$PROJECT_DIR$/const.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/driver_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/driver_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dsn.go" beforeDir="false" afterPath="$PROJECT_DIR$/dsn.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/statement.go" beforeDir="false" afterPath="$PROJECT_DIR$/statement.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rows.go" beforeDir="false" afterPath="$PROJECT_DIR$/rows.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,9 +40,6 @@
   </component>
   <component name="GoLibraries">
     <option name="indexEntireGoPath" value="false" />
-  </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/../utilities/basic-cli/.env" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectId" id="1pWhpO019YSMlhc8EctGZtGOM5T" />
   <component name="ProjectViewState">
@@ -84,13 +79,13 @@
       <recent name="C:\development\golang\src\gitlab.com\blockpoint\mdb-odbc-golang\protocolBuffers\odbc\v1" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestSQLMaxRows in gitlab.com/blockpoint/mdb-odbc-golang">
+  <component name="RunManager" selected="Go Test.TestSQLMaxRows in github.com/blockpointSystems/mdb-odbc-golang">
     <configuration name="go build gitlab.com/blockpoint/portal/backend" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="odbc" />
       <working_directory value="$PROJECT_DIR$/../portal/backend" />
       <kind value="PACKAGE" />
       <package value="gitlab.com/blockpoint/portal/backend" />
-      <directory value="$PROJECT_DIR$/../../../github.com/Evertras/go-wasm-rpc" />
+      <directory value="$PROJECT_DIR$/../../Evertras/go-wasm-rpc" />
       <filePath value="$PROJECT_DIR$/../portal/backend/main.go" />
       <method v="2" />
     </configuration>
@@ -116,17 +111,6 @@
       <test_name_prefix value="RESTSuite." />
       <method v="2" />
     </configuration>
-    <configuration name="TestProvider_addRecord/Basic_Test_1 in gitlab.com/blockpoint/libdns-mailinabox" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="odbc" />
-      <working_directory value="$PROJECT_DIR$/../libdns-mailinabox" />
-      <kind value="PACKAGE" />
-      <package value="gitlab.com/blockpoint/libdns-mailinabox" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestProvider_addRecord\E$/^\QBasic_Test_1\E$" />
-      <method v="2" />
-    </configuration>
     <configuration name="TestProvider_getRecords in gitlab.com/blockpoint/libdns-mailinabox" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="odbc" />
       <working_directory value="$PROJECT_DIR$/../libdns-mailinabox" />
@@ -149,6 +133,17 @@
       <pattern value="^\QTestProvider_getRecords\E$/^\QBasic_Test_1\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestSQLMaxRows in github.com/blockpointSystems/mdb-odbc-golang" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mdb-odbc-golang" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/blockpointSystems/mdb-odbc-golang" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestSQLMaxRows\E$" />
+      <method v="2" />
+    </configuration>
     <configuration name="TestSQLMaxRows in gitlab.com/blockpoint/mdb-odbc-golang" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="mdb-odbc-golang" />
       <working_directory value="$PROJECT_DIR$" />
@@ -163,18 +158,18 @@
     <list>
       <item itemvalue="Go Build.go build gitlab.com/blockpoint/portal/backend" />
       <item itemvalue="Go Test.RESTSuite.TestGetEnv in gitlab.com/blockpoint/portal/backend/tests (2)" />
-      <item itemvalue="Go Test.TestProvider_addRecord/Basic_Test_1 in gitlab.com/blockpoint/libdns-mailinabox" />
       <item itemvalue="Go Test.TestProvider_getRecords/Basic_Test_1 in gitlab.com/blockpoint/libdns-mailinabox" />
       <item itemvalue="Go Test.TestProvider_getRecords in gitlab.com/blockpoint/libdns-mailinabox" />
       <item itemvalue="Go Test.TestSQLMaxRows in gitlab.com/blockpoint/mdb-odbc-golang" />
+      <item itemvalue="Go Test.TestSQLMaxRows in github.com/blockpointSystems/mdb-odbc-golang" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestSQLMaxRows in github.com/blockpointSystems/mdb-odbc-golang" />
         <item itemvalue="Go Test.TestSQLMaxRows in gitlab.com/blockpoint/mdb-odbc-golang" />
         <item itemvalue="Go Build.go build gitlab.com/blockpoint/portal/backend" />
         <item itemvalue="Go Test.TestProvider_getRecords in gitlab.com/blockpoint/libdns-mailinabox" />
         <item itemvalue="Go Test.TestProvider_getRecords/Basic_Test_1 in gitlab.com/blockpoint/libdns-mailinabox" />
-        <item itemvalue="Go Test.TestProvider_addRecord/Basic_Test_1 in gitlab.com/blockpoint/libdns-mailinabox" />
       </list>
     </recent_temporary>
   </component>
