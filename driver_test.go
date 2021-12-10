@@ -435,7 +435,7 @@ func TestBasicTimeTypes(t *testing.T) {
 		}
 
 		if times.dt.Valid {
-			fmt.Println(times.dt.Time.Format("2006/01/02"))
+			fmt.Println(times.dt.Time.Format("2006-01-02"))
 		} else {
 			fmt.Println("null")
 		}
