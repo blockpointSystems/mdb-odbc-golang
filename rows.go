@@ -118,7 +118,7 @@ func (r *Rows) NextResultSet() error {
 	return io.EOF
 }
 
-// RowsColumnTypeScanType may be implemented by Rows. It should return
+// ColumnTypeScanType may be implemented by Rows. It should return
 // the value type that can be used to scan types into. For example, the database
 // column type "bigint" this should return "reflect.TypeOf(int64(0))".
 func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
@@ -147,13 +147,9 @@ func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
 		return scanTypeFloat32
 	case odbc.Datatype_FLOAT64:
 		return scanTypeFloat64
-	//case odbc.Datatype_COMPLEX64:
-	//	panic("not supported")
-	//case odbc.Datatype_COMPLEX128:
-	//	panic("not supported")
 	case odbc.Datatype_BOOL:
 		return scanTypeBoolean
-	case odbc.Datatype_TIMESTAMP:
+	case odbc.Datatype_TIMESTAMP, odbc.Datatype_DATETIME, odbc.Datatype_DATE, odbc.Datatype_TIME:
 		return scanTypeNullTime
 	case odbc.Datatype_UUID:
 		return scanTypeString
@@ -161,7 +157,7 @@ func (r *Rows) ColumnTypeScanType(index int) reflect.Type {
 	return nil
 }
 
-// RowsColumnTypeDatabaseTypeName may be implemented by Rows. It should return the
+// ColumnTypeDatabaseTypeName may be implemented by Rows. It should return the
 // database system type name without the length. Type names should be uppercase.
 func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
 	switch r.schema.GetColumnType()[index] {
@@ -197,48 +193,49 @@ func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
 		return "BOOL"
 	case odbc.Datatype_TIMESTAMP:
 		return "TIMESTAMP"
+	case odbc.Datatype_DATETIME:
+		return "DATETIME"
+	case odbc.Datatype_DATE:
+		return "DATE"
+	case odbc.Datatype_TIME:
+		return "TIME"
 	case odbc.Datatype_UUID:
 		return "UUID"
 	}
 	return "UNDEF"
 }
 
-//// RowsColumnTypeLength may be implemented by Rows. It should return the length
-//// of the column type if the column is a variable length type. If the column is
-//// not a variable length type ok should return false.
-//// If length is not limited other than system limits, it should return math.MaxInt64.
-//// The following are examples of returned values for various types:
-////   TEXT          (math.MaxInt64, true)
-////   varchar(10)   (10, true)
-////   nvarchar(10)  (10, true)
-////   decimal       (0, false)
-////   int           (0, false)
-////   bytea(30)     (30, true)
-//func (r *Rows) ColumnTypeLength(index int) (length int64, ok bool) {
-//	length = r.schema.GetColumnSize()[index]
-//	switch r.schema.GetColumnType()[index] {
-//	case odbc.Datatype_BYTEARRAY, odbc.Datatype_STRING:
-//		ok = true
-//	}
-//	return
-//}
+// ColumnTypeLength may be implemented by Rows. It should return the length
+// of the column type if the column is a variable length type. If the column is
+// not a variable length type ok should return false.
+// If length is not limited other than system limits, it should return math.MaxInt64.
+// The following are examples of returned values for various types:
+//   TEXT          (math.MaxInt64, true)
+//   varchar(10)   (10, true)
+//   nvarchar(10)  (10, true)
+//   decimal       (0, false)
+//   int           (0, false)
+//   bytea(30)     (30, true)
+func (r *Rows) ColumnTypeLength(index int) (length int64, ok bool) {
+	if r != nil {
+		switch r.schema.GetColumnType()[index] {
+		case odbc.Datatype_BYTEARRAY, odbc.Datatype_STRING:
+			return r.schema.GetColumnSize()[index], true
+		default:
+			return 0, false
+		}
+	}
+	return 0, false
+}
 
-//// RowsColumnTypeNullable may be implemented by Rows. The nullable value should
-//// be true if it is known the column may be null, or false if the column is known
-//// to be not nullable.
-//// If the column nullability is unknown, ok should be false.
-//func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
-//	panic("implement me!")
-//	if r != nil {
-//		bit, err := GetBitFromBytes(r.schema.GetColumnIsNullableBitmap(), index)
-//		if err != nil {
-//			return
-//		}
-//		nullable = bit == ONE
-//		ok = true
-//	}
-//	return
-//}
+// ColumnTypeNullable may be implemented by Rows. The nullable value should
+// be true if it is known the column may be null, or false if the column is known
+// to be not nullable.
+// If the column nullability is unknown, ok should be false.
+func (r *Rows) ColumnTypeNullable(index int) (nullable, ok bool) {
+	// We don't know if the column is nullable, return false, false
+	return
+}
 
 // RowsColumnTypePrecisionScale may be implemented by Rows. It should return
 // the precision and scale for decimal types. If not applicable, ok should be false.
@@ -246,20 +243,20 @@ func (r *Rows) ColumnTypeDatabaseTypeName(index int) string {
 //   decimal(38, 4)    (38, 4, true)
 //   int               (0, 0, false)
 //   decimal           (math.MaxInt64, math.MaxInt64, true)
-func (r *Rows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
-	// TODO: CHECK IMPLEMENTATION
-	switch r.schema.GetColumnType()[index] {
-	case odbc.Datatype_FLOAT32:
-		precision = 11
-		scale     = 2
-		ok		  = true
-	case odbc.Datatype_FLOAT64:
-		precision = 11
-		scale     = 2
-		ok		  = true
-	}
-	return
-}
+//func (r *Rows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
+//	// TODO: CHECK IMPLEMENTATION
+//	switch r.schema.GetColumnType()[index] {
+//	case odbc.Datatype_FLOAT32:
+//		precision = 6
+//		scale     = 7
+//		ok		  = true
+//	case odbc.Datatype_FLOAT64:
+//		precision = 11
+//		scale     = 15
+//		ok		  = true
+//	}
+//	return
+//}
 
 func (rs *resultSet) buildNextResultSet(schema *odbc.Schema, set []*odbc.Row) {
 	rs.rows = make([][]driver.Value, len(set))

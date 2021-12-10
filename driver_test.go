@@ -368,6 +368,87 @@ func TestBasicBegin(t *testing.T) {
 	mdb.Close()
 }
 
+func TestBasicTimeTypes(t *testing.T) {
+	var (
+		mdb  *sql.DB
+		err  error
+
+		rows   *sql.Rows
+		result sql.Result
+		times struct {
+			tms,
+			dtm,
+			dt,
+			tm sql.NullTime
+	}
+	)
+
+	mdb, err = sql.Open("mdb", "system:biglove@tcp(0.0.0.0:8080)/master")
+	checkErr(t, mdb, err)
+
+	result, err = mdb.Exec("CREATE DATABASE test")
+	// No error check here if already has db
+
+	result, err = mdb.Exec("USE test")
+	checkErr(t, mdb, err)
+
+	handleResult(t, mdb, result)
+
+	result, err = mdb.Exec(fmt.Sprintf("CREATE BLOCKCHAIN %s HISTORICAL (tms TIMESTAMP NULLABLE, dtm DATETIME NULLABLE, dt DATE NULLABLE, tm TIME NULLABLE)", t.Name()))
+
+	currentTime := time.Now()
+	result, err = mdb.Exec(fmt.Sprintf("INSERT %s  VALUES (\"%s\", \"%s\", \"%s\", \"%s\")",
+		t.Name(),
+		currentTime.Format("2006-01-02 15:04:05.000000000"),
+		currentTime.Format("2006-01-02 15:04:05"),
+		currentTime.Format("2006/01/02"),
+		currentTime.Format("15:04:05"),
+	))
+
+	result, err = mdb.Exec(fmt.Sprintf("INSERT %s  VALUES (NULL, NULL, NULL, NULL)",
+		t.Name(),
+	))
+	checkErr(t, mdb, err)
+
+	// Run a query that will error.
+	rows, err = mdb.Query(fmt.Sprintf("SELECT * FROM %s", t.Name()))
+	checkErr(t, mdb, err)
+
+	for rows.Next() {
+		err = rows.Scan(
+			&times.tms,
+			&times.dtm,
+			&times.dt,
+			&times.tm,
+			)
+		checkErr(t, mdb, err)
+		if times.tms.Valid {
+			fmt.Println(times.tms.Time.Format("2006-01-02 15:04:05.000000000"))
+		} else {
+			fmt.Println("null")
+		}
+
+		if times.dtm.Valid {
+			fmt.Println(times.dtm.Time.Format("2006-01-02 15:04:05"))
+		} else {
+			fmt.Println("null")
+		}
+
+		if times.dt.Valid {
+			fmt.Println(times.dt.Time.Format("2006/01/02"))
+		} else {
+			fmt.Println("null")
+		}
+
+		if times.tm.Valid {
+			fmt.Println(times.tm.Time.Format("15:04:05"))
+		} else {
+			fmt.Println("null")
+		}
+	}
+}
+
+
 
 func TestImportFile(t *testing.T) {
 	var (

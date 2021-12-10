@@ -401,6 +401,30 @@ func convertColumnToValue(col []byte, datatype odbc.Datatype) driver.Value {
 		return bool(int8(col[0]) == 1)
 	case odbc.Datatype_TIMESTAMP:
 		return time.Unix(0, int64(binary.LittleEndian.Uint64(col[0:8])))
+	case odbc.Datatype_DATETIME:
+		return time.Unix(int64(binary.LittleEndian.Uint64(col[0:8])), 0)
+	case odbc.Datatype_DATE:
+		return time.Date(
+			int(binary.LittleEndian.Uint16(col[:2])),
+			time.Month(int(col[2])),
+			int(col[3]),
+			0,
+			0,
+			0,
+			0,
+			time.UTC,
+			)
+	case odbc.Datatype_TIME:
+		return time.Date(
+			0,
+			0,
+			0,
+			int(col[0]),
+			int(col[1]),
+			int(col[2]),
+			0,
+			time.UTC,
+		)
 	case odbc.Datatype_UUID:
 		uuid, _ := uuid.FromBytes(col)
 		return uuid.String()
