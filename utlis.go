@@ -138,13 +138,13 @@ func appendDateTime(buf []byte, t time.Time) ([]byte, error) {
 	localBuf[26], localBuf[27], localBuf[28] =
 		digits01[nsec100], digits10[nsec1], digits01[nsec1]
 
-	// trim trailing zeros
-	n := len(localBuf)
-	for n > 0 && localBuf[n-1] == '0' {
-		n--
-	}
+	//// trim trailing zeros
+	//n := len(localBuf)
+	//for n > 0 && localBuf[n-1] == '0' {
+	//	n--
+	//}
 
-	return append(buf, localBuf[:n]...), nil
+	return append(buf, localBuf[:]...), nil
 }
 
 // zeroDateTime is used in formatBinaryDateTime to avoid an allocation
@@ -156,8 +156,6 @@ var zeroDateTime = [...]byte{48, 48, 48, 48, 45, 48, 48, 45, 48, 48, 32, 48, 48,
 
 const digits01 = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
 const digits10 = "0000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999"
-
-
 
 // reserveBuffer checks cap(buf) and expand buffer to len(buf) + appendSize.
 // If cap(buf) is not enough, reallocate new buffer.
