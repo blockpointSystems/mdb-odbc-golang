@@ -45,11 +45,11 @@ func (db *Conn) configureConnection() (err error) {
 	}
 
 	var (
-		initReq  = &odbc.InitializationRequest{
+		initReq = &odbc.InitializationRequest{
 			Username: db.cfg.User,
 			Password: db.cfg.Password,
 			DbName:   db.cfg.DBName,
-			Auth: 	  db.auth,
+			Auth:     db.auth,
 		}
 	)
 
@@ -57,7 +57,6 @@ func (db *Conn) configureConnection() (err error) {
 		context.Background(),
 		initReq,
 	)
-
 
 	//var cmdSet strings.Builder
 	//for param, val := range db.cfg.Params {
@@ -101,9 +100,8 @@ func (db *Conn) configureConnection() (err error) {
 	return
 }
 
-
 // Prepare returns a prepared statement, bound to this connection.
-func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
+func (db *Conn) Prepare(query string) (s driver.Stmt, err error) {
 	s = &Stmt{
 		conn:       db,
 		stmt:       query,
@@ -120,7 +118,7 @@ func (db *Conn)	Prepare(query string) (s driver.Stmt, err error) {
 // connections and only calls Close when there's a surplus of
 // idle connections, it shouldn't be necessary for drivers to
 // do their own connection caching.
-func (db *Conn)	Close() (err error) {
+func (db *Conn) Close() (err error) {
 	if !db.IsClosed() {
 		db.SetClosed()
 		if db.IsActiveQuery() {
@@ -140,7 +138,7 @@ func (db *Conn)	Close() (err error) {
 // Begin starts and returns a new transaction.
 //
 // Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
-func (db *Conn)	Begin() (xact driver.Tx, err error) {
+func (db *Conn) Begin() (xact driver.Tx, err error) {
 	return db.begin(context.Background(), DEFAULT_XACT_OPTIONS)
 }
 
@@ -170,7 +168,7 @@ func (db *Conn) begin(ctx context.Context, xactOpts driver.TxOptions) (xact driv
 		req = &odbc.XactRequest{
 			IsolationLevel: int32(xactOpts.Isolation),
 			ReadOnly:       xactOpts.ReadOnly,
-			Auth: db.auth,
+			Auth:           db.auth,
 		}
 		resp *odbc.XactResponse
 	)
@@ -227,7 +225,7 @@ func (db *Conn) Exec(query string, args []driver.Value) (driver.Result, error) {
 func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
 	var (
 		req = &odbc.ExecRequest{
-			Auth: 	   db.auth,
+			Auth:      db.auth,
 			Statement: query,
 		}
 
@@ -244,7 +242,7 @@ func (db *Conn) exec(query string) (affectedRows, insertId int64, err error) {
 	// Log affected Rows
 	affectedRows = resp.AffectedRows
 	// Log insert Id
-	insertId     = resp.InsertId
+	insertId = resp.InsertId
 
 	return
 }
@@ -255,12 +253,14 @@ func (db *Conn) Query(query string, args []driver.Value) (driver.Rows, error) {
 
 func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	var (
+		ctx = context.Background()
+
 		req        *odbc.QueryRequest
 		respClient odbc.MDBService_QueryClient
 
 		queryResp *odbc.QueryResponse
 
-		err  error
+		err error
 	)
 
 	if db.IsClosed() {
@@ -273,7 +273,6 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 		return &Rows{}, fmt.Errorf("query already active")
 	}
 	db.SetActiveQuery()
-
 
 	if len(args) != 0 {
 		if !db.cfg.InterpolateParams {
@@ -288,19 +287,18 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	}
 
 	req = &odbc.QueryRequest{
-		Auth: 	   db.auth,
-		Statement: query,
+		Auth:              db.auth,
+		Statement:         query,
 		MaxResponseLength: db.cfg.MaxRowCount,
-		BatchSize: db.cfg.FetchSize,
+		BatchSize:         db.cfg.FetchSize,
 	}
 
 	// Send command
-	respClient, err = db.MDBServiceClient.Query(context.Background(), req)
+	respClient, err = db.MDBServiceClient.Query(ctx, req)
 	if err != nil {
 		db.SetNotActiveQuery()
 		return nil, db.markBadConn(err)
 	}
-
 
 	// Store the stream in the connection object
 	//Now stored in the rows directly
@@ -316,23 +314,17 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 	// Deserialize the response and build the rows
 	var resp = &Rows{
 		streamRecv: &respClient,
-		schema: queryResp.GetRespSchema(),
-		set:  buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet()),
-		done: queryResp.GetDone(),
+		schema:     queryResp.GetRespSchema(),
+		set:        buildResultSet(queryResp.GetRespSchema(), queryResp.GetResultSet()),
+		done:       queryResp.GetDone(),
 	}
-	//if resp.done {
-	//	// Close the query req and return the rows
-	//	respClient.CloseSend()
-	//
-	//	// FIXME: Update this
-	//	db.SetNotActiveQuery()
-	//	resp.close = func() error { return nil }
-	//	return resp, nil
-	//}
 
-	resp.close = func() error {
-		if !db.IsActiveQuery() {
-			return fmt.Errorf("query active but hasn't been closed")
+	resp.close = func() (err error) {
+		if db.IsActiveQuery() {
+			err = db.closeQuery()
+			if err != nil {
+				return err
+			}
 		}
 
 		db.SetNotActiveQuery()
@@ -341,7 +333,6 @@ func (db *Conn) query(query string, args []driver.Value) (*Rows, error) {
 
 	return resp, nil
 }
-
 
 func (db *Conn) closeQuery() (err error) {
 	_, err = db.CloseQuery(context.Background(), db.auth)
@@ -413,7 +404,7 @@ func convertColumnToValue(col []byte, datatype odbc.Datatype) driver.Value {
 			0,
 			0,
 			time.UTC,
-			)
+		)
 	case odbc.Datatype_TIME:
 		return time.Date(
 			0,
@@ -439,10 +430,9 @@ func (db *Conn) interpolateParams(query string, args []driver.Value) (resp strin
 		return
 	}
 
-
 	// Initialize the buffer
 	var (
-		buf = make([]byte, 0, len(query))
+		buf    = make([]byte, 0, len(query))
 		argPos int
 	)
 

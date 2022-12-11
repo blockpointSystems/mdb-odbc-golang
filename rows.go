@@ -41,13 +41,10 @@ func (r *Rows) Columns() []string {
 
 // Close closes the rows iterator.
 func (r *Rows) Close() error {
-	if !r.done {
-		panic("not done")
-	}
-	r.schema   = nil
+	r.schema = nil
 
 	r.set.columnNames = nil
-	r.set.rows 		  = nil
+	r.set.rows = nil
 
 	r.nextSet = nil
 	return r.close()
@@ -76,7 +73,6 @@ func (r *Rows) Next(dest []driver.Value) (err error) {
 
 	return r.Next(dest)
 }
-
 
 // RowsNextResultSet extends the Rows interface by providing a way to signal
 // the driver to advance to the next result set.
